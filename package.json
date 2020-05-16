@@ -1,15 +1,32 @@
 {
   "name": "resub-entity",
-  "version": "0.1.0-alpha2",
-  "description": "",
+  "version": "0.1.0-alpha3",
+  "description": "This project eases the use of ReSub by providing a simple function to create a Store for an entity",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist/",
+    "src/",
+    "tsconfig.json",
+    ".parcelrc",
+    ".eslintrc",
+    ".babelrc",
+    ".prettierrc",
+    "jest.config.js"
+  ],
   "keywords": [
     "resub",
     "store",
-    "entity"
+    "entity",
+    "react",
+    "flux",
+    "subscriptions"
   ],
   "author": "BiggA94",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BiggA94/resub-entity"
+  },
   "license": "MIT",
   "scripts": {
     "build": "parcel build ./src/index.ts",
