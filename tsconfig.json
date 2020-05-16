@@ -21,7 +21,8 @@
     "noEmit": true,
     "jsx": "preserve",
     "sourceMap": false,
-    "baseUrl": "src"
+    "baseUrl": "src",
+    "declaration": true
   },
   "include": [
     "src"

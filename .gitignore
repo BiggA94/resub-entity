@@ -1,6 +1,7 @@
 dist/
 build/
 node_modules/
+act/
 *.log
 
 .cache
