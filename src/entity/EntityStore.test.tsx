@@ -1,23 +1,153 @@
-import {createEntityStore} from './EntityStore';
+import React from 'react';
+import {createEntityStore, EntityStore} from './EntityStore';
+import {ComponentBase} from 'resub';
+import {mount} from 'enzyme';
 
 interface TestObject {
     key: number;
     value: number;
 }
 
+interface TestParameters<P> {
+    uniqueId: string;
+    testStore: EntityStore<P>;
+    propertyKey: number;
+}
+
+interface TestState<S> {
+    testObject: S;
+}
+
+class TestComponent extends ComponentBase<TestParameters<TestObject>, TestState<TestObject>> {
+    protected _buildState(): Partial<TestState<TestObject>> | undefined {
+        return {
+            testObject: this.props.testStore.getOne(this.props.propertyKey),
+        };
+    }
+
+    render(): null | number {
+        if (!this.state.testObject) return null;
+        return this.state.testObject.value;
+    }
+}
+
 describe('EntityStore', function () {
+    const testEntities = [
+        {key: 0, value: 0},
+        {key: 1, value: 1},
+        {key: 2, value: 2},
+    ];
+
     it('should return correct values for given keys', function () {
         const testStore = createEntityStore<TestObject>({
             selectIdFunction: (entity) => entity.key,
         });
-        testStore.addAll([
-            {key: 0, value: 0},
-            {key: 1, value: 1},
-            {key: 2, value: 2},
-        ]);
+        testStore.setAll(testEntities);
 
-        [...Array(3).keys()].forEach((key) => {
+        [...Array(testEntities.length).keys()].forEach((key) => {
             expect(testStore.getOne(key)).toEqual({key, value: key});
         });
+    });
+
+    it('should return all entries', function () {
+        const testStore = createEntityStore<TestObject>({
+            selectIdFunction: (entity) => entity.key,
+        });
+        testStore.setAll(testEntities);
+        const allTestObjects = testStore.getAll();
+        [...Array(testEntities.length).keys()].forEach((key) => {
+            expect(allTestObjects).toContainEqual({key, value: key});
+        });
+    });
+
+    it('should trigger update in component on change of entity', function () {
+        const testStore = createEntityStore<TestObject>({
+            selectIdFunction: (entity) => entity.key,
+        });
+        testStore.setAll(testEntities);
+
+        const testComponent1 = mount(
+            <TestComponent uniqueId={new Date().getTime() + '1'} testStore={testStore} propertyKey={1} />
+        );
+
+        const testComponent2 = mount(
+            <TestComponent propertyKey={2} testStore={testStore} uniqueId={new Date().getTime() + '2'} />
+        );
+
+        expect(testComponent1.contains('1')).toEqual(true);
+        expect(testComponent2.contains('2')).toEqual(true);
+
+        testStore.setOne({key: 1, value: 2});
+
+        testComponent1.update();
+        testComponent2.update();
+
+        expect(testComponent1.contains('1')).toEqual(false);
+        expect(testComponent1.contains('2')).toEqual(true);
+
+        testStore.setOne({key: 2, value: 1});
+
+        testComponent1.update();
+        testComponent2.update();
+        expect(testComponent1.contains('2')).toEqual(true);
+        expect(testComponent2.contains('1')).toEqual(true);
+    });
+
+    it('should return entries, that match the search criteria', function () {
+        const testStore = createEntityStore<TestObject>({
+            selectIdFunction: (entity) => entity.key,
+        });
+        testStore.setAll(testEntities);
+
+        const testObjects = testStore.search((entity: TestObject) => entity.value === 2);
+        expect(testObjects).toHaveLength(1);
+        expect(testObjects).toStrictEqual([{key: 2, value: 2}]);
+    });
+
+    it('should remove entity by id', function () {
+        const testStore = createEntityStore<TestObject>({
+            selectIdFunction: (entity) => entity.key,
+        });
+        testStore.setAll(testEntities);
+        expect(testStore.getAll()).toHaveLength(3);
+
+        const removed = testStore.removeOneById(1);
+        expect(removed?.key).toEqual(1);
+        expect(testStore.getAll()).toHaveLength(2);
+    });
+
+    it('should remove entity by entity', function () {
+        const testStore = createEntityStore<TestObject>({
+            selectIdFunction: (entity) => entity.key,
+        });
+        testStore.setAll(testEntities);
+        expect(testStore.getAll()).toHaveLength(3);
+
+        const removedId = testStore.removeOne({key: 1, value: 1});
+        expect(removedId).toEqual(1);
+        expect(testStore.getAll()).toHaveLength(2);
+    });
+
+    it('should return all the entities to given ids', function () {
+        const testStore = createEntityStore<TestObject>({
+            selectIdFunction: (entity) => entity.key,
+        });
+        testStore.setAll(testEntities);
+        expect(testStore.getAll()).toHaveLength(3);
+
+        const multiple = testStore.getMultiple([0, 2]);
+        expect(multiple.length).toEqual(2);
+        expect(multiple[0].key).toEqual(0);
+        expect(multiple[1].key).toEqual(2);
+    });
+
+    it('should clear store', function () {
+        const testStore = createEntityStore<TestObject>({
+            selectIdFunction: (entity) => entity.key,
+        });
+        testStore.setAll(testEntities);
+        expect(testStore.getAll()).toHaveLength(3);
+        testStore.clear();
+        expect(testStore.getAll()).toHaveLength(0);
     });
 });

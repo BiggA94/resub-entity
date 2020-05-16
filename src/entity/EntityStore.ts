@@ -1,16 +1,5 @@
-import {
-    EntityHandler,
-    idType,
-    selectIdFunctionType,
-    sortFunctionType,
-} from './EntityHandler';
-import {
-    AutoSubscribeStore,
-    autoSubscribeWithKey,
-    formCompoundKey,
-    key,
-    StoreBase,
-} from 'resub';
+import {EntityHandler, idType, selectIdFunctionType, sortFunctionType} from './EntityHandler';
+import {AutoSubscribeStore, autoSubscribeWithKey, formCompoundKey, key, StoreBase} from 'resub';
 
 export const triggerEntityKey = '!@ENTITY_TRIGGER@!';
 
@@ -20,29 +9,78 @@ export class EntityStore<entity, id extends idType = number> extends StoreBase {
 
     constructor(props: EntityStoreProperties<entity, id>) {
         super(props.throttleMs, props.bypassTriggerBlocks || false);
-        this.entityHandler = new EntityHandler<entity, id>(
-            props.selectIdFunction,
-            props.sortFunction
-        );
+        this.entityHandler = new EntityHandler<entity, id>(props.selectIdFunction, props.sortFunction);
     }
 
-    public addOne(entity: entity): id {
+    protected getTriggerForId(id: id): string {
+        return formCompoundKey(String(id), triggerEntityKey);
+    }
+
+    public setOne(entity: entity): id {
         const id = this.entityHandler.add(entity);
-        this.trigger(formCompoundKey(String(id), triggerEntityKey));
-        this.trigger(triggerEntityKey);
+        this.trigger([this.getTriggerForId(id), triggerEntityKey]);
         return id;
     }
 
-    addAll(entities: Array<entity>): ReadonlyArray<id> {
+    public setAll(entities: Array<entity>): ReadonlyArray<id> {
         StoreBase.pushTriggerBlock();
-        const ids = entities.map(this.addOne.bind(this));
+        const ids = entities.map(this.setOne.bind(this));
         StoreBase.popTriggerBlock();
         return ids;
     }
 
     @autoSubscribeWithKey(triggerEntityKey)
-    getOne(id: id): entity | undefined {
+    public getOne(id: id): entity | undefined {
         return this.entityHandler.getOne(id);
+    }
+
+    @autoSubscribeWithKey(triggerEntityKey)
+    public getAll(): ReadonlyArray<entity> {
+        return this.entityHandler.getAll();
+    }
+
+    @autoSubscribeWithKey(triggerEntityKey)
+    public getAllMapped(): ReadonlyMap<id, entity> {
+        return this.entityHandler.getAllMapped();
+    }
+
+    @autoSubscribeWithKey(triggerEntityKey)
+    public getMultiple(ids: ReadonlyArray<id>): ReadonlyArray<entity> {
+        return this.entityHandler.get(ids);
+    }
+
+    public clear(): ReadonlyArray<id> {
+        const ids = this.entityHandler.clear();
+        this.trigger(triggerEntityKey);
+        return ids;
+    }
+
+    @autoSubscribeWithKey(triggerEntityKey)
+    public hasOne(id: id): boolean {
+        // todo: subscribe per id
+        return this.entityHandler.hasOne(id);
+    }
+
+    public removeOne(entity: entity): id | undefined {
+        const removedId = this.entityHandler.removeOne(entity);
+        if (removedId) {
+            this.trigger([this.getTriggerForId(removedId), triggerEntityKey]);
+        }
+        return removedId;
+    }
+
+    public removeOneById(id: id): entity | undefined {
+        const removedEntity = this.entityHandler.removeOneById(id);
+        if (removedEntity) {
+            this.trigger([this.getTriggerForId(id), triggerEntityKey]);
+        }
+        return removedEntity;
+    }
+
+    // todo: needs proper subscriptions
+    @autoSubscribeWithKey(triggerEntityKey)
+    public search(searchFilter: (entity: entity) => boolean): ReadonlyArray<entity> {
+        return this.entityHandler.getAll().filter(searchFilter);
     }
 }
 

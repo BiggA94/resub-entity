@@ -11,11 +11,7 @@ export function defaultSortFunction<entity, id extends idType = number>(
         } else if (typeof id1 === 'number' && typeof id2 === 'number') {
             return id1 - id2;
         } else {
-            throw new Error(
-                'type ' +
-                    typeof id1 +
-                    ' not supported, please use custom sort function'
-            );
+            throw new Error('type ' + typeof id1 + ' not supported, please use custom sort function');
         }
     };
 }

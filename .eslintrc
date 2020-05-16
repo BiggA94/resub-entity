@@ -11,13 +11,13 @@
     "prettier"
   ],
   "extends": [
-    "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
-    "plugin:resub/recommended",
     "plugin:@typescript-eslint/eslint-recommended",
     "plugin:@typescript-eslint/recommended",
-    "plugin:prettier/recommended",
-    "prettier/react"
+    "plugin:resub/recommended",
+    "plugin:react/recommended",
+    "prettier/react",
+    "plugin:prettier/recommended"
   ],
   "settings": {
     "react": {
