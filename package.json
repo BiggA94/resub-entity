@@ -1,0 +1,59 @@
+{
+  "name": "resub-entity",
+  "version": "0.1.0",
+  "description": "",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "keywords": [
+    "resub",
+    "store",
+    "entity"
+  ],
+  "author": "BiggA94",
+  "license": "MIT",
+  "scripts": {
+    "build": "parcel build ./src/index.ts",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier-standard --format",
+    "test": "jest --watch"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.9.6",
+    "@babel/plugin-proposal-class-properties": "^7.8.3",
+    "@babel/plugin-proposal-decorators": "^7.8.3",
+    "@babel/preset-env": "^7.9.6",
+    "@babel/preset-react": "^7.9.4",
+    "@babel/preset-typescript": "^7.9.0",
+    "@parcel/transformer-typescript-tsc": "^2.0.0-alpha.3.1",
+    "@parcel/transformer-typescript-types": "^2.0.0-alpha.3.1",
+    "@parcel/validator-typescript": "^2.0.0-alpha.3.1",
+    "@parcel/validator-eslint": "^2.0.0-alpha.3.1",
+    "@types/enzyme": "^3.10.5",
+    "@types/jest": "^25.2.1",
+    "@types/node": "^14.0.1",
+    "@types/react": "^16.9.32",
+    "@typescript-eslint/eslint-plugin": "^2.33.0",
+    "@typescript-eslint/parser": "^2.33.0",
+    "enzyme": "^3.11.0",
+    "enzyme-adapter-react-16": "^1.15.2",
+    "enzyme-to-json": "^3.4.4",
+    "eslint": "^7.0.0",
+    "eslint-plugin-react": "^7.20.0",
+    "eslint-plugin-resub": "^0.5.2",
+    "jest": "^26.0.1",
+    "jest-junit": "^10.0.0",
+    "parcel": "^2.0.0-alpha.3.2",
+    "prettier": "^2.0.5",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1",
+    "resub": "^2.3.0",
+    "rxjs": "^6.5.5",
+    "typescript": "^3.9.2"
+  },
+  "peerDependencies": {
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1",
+    "resub": "^2.3.0"
+  }
+}

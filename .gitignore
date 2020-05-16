@@ -1,0 +1,8 @@
+dist/
+build/
+node_modules/
+*.log
+
+.cache
+.parcel-cache
+.idea
