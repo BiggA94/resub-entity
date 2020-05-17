@@ -33,7 +33,8 @@
     "lint": "eslint ./src",
     "lint:fix": "eslint ./src --fix",
     "typecheck": "tsc --noEmit",
-    "test": "jest --watch"
+    "test": "jest",
+    "test:watch": "jest --watch"
   },
   "devDependencies": {
     "@babel/core": "^7.9.6",
