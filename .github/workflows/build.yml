@@ -31,7 +31,7 @@ jobs:
     - name: Test
       uses: Borales/actions-yarn@v2.1.0
       with:
-        cmd: test
+        cmd: test --ci
 
     - name: Lint
       uses: Borales/actions-yarn@v2.1.0
