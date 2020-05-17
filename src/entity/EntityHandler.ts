@@ -103,4 +103,25 @@ export class EntityHandler<entity, id extends idType = number> {
         this.entities.clear();
         return ids;
     }
+
+    setEntities(entities: ReadonlyArray<entity>): ReadonlyArray<id> {
+        if (entities.length === 0) {
+            // shortcut, clear entities here
+            const result = new Array(...this.ids);
+            this.ids.clear();
+            this.entities.clear();
+            return result;
+        }
+        // the ids of removed entities are needed in order to trigger the updates correctly
+        // so we need to collect them here
+        const newIds = entities.map<id>((value) => this.selectIdFunction(value));
+        const idsToRemove = [...this.ids].filter((value) => !newIds.includes(value));
+
+        this.ids.clear();
+        this.entities.clear();
+
+        this.addAll(entities);
+
+        return idsToRemove;
+    }
 }
