@@ -33,7 +33,6 @@
     "lint": "eslint ./src",
     "lint:fix": "eslint ./src --fix",
     "typecheck": "tsc --noEmit",
-    "format": "prettier-standard --format",
     "test": "jest --watch"
   },
   "devDependencies": {

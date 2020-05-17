@@ -27,6 +27,16 @@ jobs:
       uses: Borales/actions-yarn@v2.1.0
       with:
         cmd: install
+
+    - name: Test
+      uses: Borales/actions-yarn@v2.1.0
+      with:
+        cmd: test
+
+    - name: Lint
+      uses: Borales/actions-yarn@v2.1.0
+      with:
+        cmd: lint
         
     - name: Build
       uses: Borales/actions-yarn@v2.1.0
