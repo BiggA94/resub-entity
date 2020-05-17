@@ -37,7 +37,6 @@ jobs:
     # Runs a single command using the runners shell
     - name: Install dependencies
       uses: Borales/actions-yarn@v2.1.0
-      if: steps.yarn-cache.outputs.cache-hit != 'true'
       with:
         cmd: install
 
