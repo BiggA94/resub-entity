@@ -45,4 +45,16 @@ describe('EntityHandler', function () {
             expect(eh.removeOneById(eh.getId(entity))).toEqual(entity);
         });
     });
+    it('should handle strings as ids', function () {
+        const eh = new EntityHandler<string, string>((entity) => entity);
+
+        eh.addAll(['1', '2', '3']);
+
+        expect(eh.getAll()).toHaveLength(3);
+
+        const newEntities = ['2', 'a', 'e'];
+        const removedEntities = eh.setEntities(newEntities);
+        expect(removedEntities).toEqual(['1', '3']);
+        expect(eh.getAll()).toEqual(newEntities);
+    });
 });
