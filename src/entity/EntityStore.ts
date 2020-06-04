@@ -16,6 +16,10 @@ export class EntityStore<entity, id extends idType = number> extends StoreBase {
         return formCompoundKey(String(id), triggerEntityKey);
     }
 
+    public getId(entity: entity): id {
+        return this.entityHandler.getId(entity);
+    }
+
     public setOne(entity: entity): id {
         const id = this.entityHandler.add(entity);
         this.trigger([this.getTriggerForId(id), triggerEntityKey]);
@@ -27,6 +31,31 @@ export class EntityStore<entity, id extends idType = number> extends StoreBase {
         const ids = entities.map(this.setOne.bind(this));
         StoreBase.popTriggerBlock();
         return ids;
+    }
+
+    /**
+     * reset with the given entities instead of adding them.
+     * @param entities
+     */
+    public setEntities(entities: ReadonlyArray<entity>): void {
+        if (!(entities instanceof Array)) {
+            throw new Error('setEntities needs an Array');
+        }
+
+        StoreBase.pushTriggerBlock();
+        const removedEntities = this.entityHandler.setEntities(entities);
+
+        // at first, trigger the removed ones
+        removedEntities.forEach((id) => this.trigger(formCompoundKey(String(id), triggerEntityKey)));
+
+        // now trigger for the newly added ones
+        entities.forEach((entity) =>
+            this.trigger(formCompoundKey(String(this.entityHandler.getId(entity)), triggerEntityKey))
+        );
+
+        this.trigger(triggerEntityKey);
+
+        StoreBase.popTriggerBlock();
     }
 
     @autoSubscribeWithKey(triggerEntityKey)
