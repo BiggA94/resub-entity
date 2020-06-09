@@ -1,6 +1,6 @@
 {
   "name": "resub-entity",
-  "version": "0.1.0-alpha6",
+  "version": "0.1.0-alpha7",
   "description": "This project eases the use of ReSub by providing a simple function to create a Store for an entity",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -29,7 +29,8 @@
   },
   "license": "MIT",
   "scripts": {
-    "build": "parcel build ./src/index.ts --no-minify",
+    "build": "parcel build ./src/index.ts",
+    "build:noMinify": "parcel build ./src/index.ts --no-minify",
     "lint": "eslint ./src",
     "lint:fix": "eslint ./src --fix",
     "typecheck": "tsc --noEmit",
