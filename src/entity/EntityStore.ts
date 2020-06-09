@@ -50,7 +50,7 @@ export class EntityStore<entity, id extends idType = number> extends StoreBase {
 
         // now trigger for the newly added ones
         entities.forEach((entity) =>
-            this.trigger(formCompoundKey(String(this.entityHandler.getId(entity)), triggerEntityKey)),
+            this.trigger(formCompoundKey(String(this.entityHandler.getId(entity)), triggerEntityKey))
         );
 
         this.trigger(triggerEntityKey);
@@ -125,7 +125,7 @@ export interface EntityStoreProperties<entity, id extends idType = number> {
 }
 
 export function createEntityStore<entity, id extends idType = number>(
-    props: EntityStoreProperties<entity, id>,
+    props: EntityStoreProperties<entity, id>
 ): EntityStore<entity, id> {
     return new EntityStore<entity, id>(props);
 }
