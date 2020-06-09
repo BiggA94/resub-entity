@@ -29,7 +29,7 @@
   },
   "license": "MIT",
   "scripts": {
-    "build": "parcel build ./src/index.ts",
+    "build": "parcel build ./src/index.ts --no-minify",
     "lint": "eslint ./src",
     "lint:fix": "eslint ./src --fix",
     "typecheck": "tsc --noEmit",

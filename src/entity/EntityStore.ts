@@ -59,7 +59,7 @@ export class EntityStore<entity, id extends idType = number> extends StoreBase {
     }
 
     @autoSubscribeWithKey(triggerEntityKey)
-    public getOne(id: id): entity | undefined {
+    public getOne(@key id: id): entity | undefined {
         return this.entityHandler.getOne(id);
     }
 
@@ -85,7 +85,7 @@ export class EntityStore<entity, id extends idType = number> extends StoreBase {
     }
 
     @autoSubscribeWithKey(triggerEntityKey)
-    public hasOne(id: id): boolean {
+    public hasOne(@key id: id): boolean {
         // todo: subscribe per id
         return this.entityHandler.hasOne(id);
     }
@@ -114,8 +114,8 @@ export class EntityStore<entity, id extends idType = number> extends StoreBase {
 }
 
 // as @param does not work here, we manually apply key here
-key(EntityStore.prototype, 'getOne', 0);
-key(EntityStore.prototype, 'hasOne', 0);
+//key(EntityStore.prototype, 'getOne', 0);
+//key(EntityStore.prototype, 'hasOne', 0);
 
 export interface EntityStoreProperties<entity, id extends idType = number> {
     throttleMs?: number;

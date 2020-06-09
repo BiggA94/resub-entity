@@ -1,7 +1,8 @@
 import React from 'react';
-import {createEntityStore, EntityStore} from './EntityStore';
+import {createDynamicLoadingStore, createEntityStore, createPersistentEntityStore, EntityStore} from '../';
 import {ComponentBase} from 'resub';
 import {mount} from 'enzyme';
+import {of} from 'rxjs';
 
 interface TestObject {
     key: number;
@@ -11,23 +12,37 @@ interface TestObject {
 interface TestParameters<P> {
     uniqueId: string;
     testStore: EntityStore<P>;
-    propertyKey: number;
+    propertyKey?: number;
 }
 
 interface TestState<S> {
-    testObject: S;
+    testObject: S | ReadonlyArray<S>;
 }
 
 class TestComponent extends ComponentBase<TestParameters<TestObject>, TestState<TestObject>> {
-    protected _buildState(): Partial<TestState<TestObject>> | undefined {
-        return {
-            testObject: this.props.testStore.getOne(this.props.propertyKey),
-        };
+    protected _buildState(props: TestParameters<TestObject>): Partial<TestState<TestObject>> | undefined {
+        console.log('buildstate here');
+        if (props.propertyKey) {
+            return {
+                testObject: props.testStore.getOne(props.propertyKey),
+            };
+        } else {
+            return {
+                testObject: props.testStore.getAll(),
+            };
+        }
     }
 
-    render(): null | number {
+    render(): null | number | number[] {
         if (!this.state.testObject) return null;
-        return this.state.testObject.value;
+        if (Array.isArray(this.state.testObject)) {
+            return this.state.testObject.map((obj: TestObject) => {
+                // return <p key={obj.key}>{obj.value}</p>;
+                return obj.value;
+            });
+        } else {
+            return (this.state.testObject as TestObject).value;
+        }
     }
 }
 
@@ -63,6 +78,133 @@ describe('EntityStore', function () {
     it('should trigger update in component on change of entity', function () {
         const testStore = createEntityStore<TestObject>({
             selectIdFunction: (entity) => entity.key,
+        });
+        testStore.setAll(testEntities);
+
+        const testComponent1 = mount(
+            <TestComponent uniqueId={new Date().getTime() + '1'} testStore={testStore} propertyKey={1} />
+        );
+
+        const testComponent2 = mount(
+            <TestComponent propertyKey={2} testStore={testStore} uniqueId={new Date().getTime() + '2'} />
+        );
+
+        expect(testComponent1.contains('1')).toEqual(true);
+        expect(testComponent2.contains('2')).toEqual(true);
+
+        testStore.setOne({key: 1, value: 2});
+
+        testComponent1.update();
+        testComponent2.update();
+
+        expect(testComponent1.contains('1')).toEqual(false);
+        expect(testComponent1.contains('2')).toEqual(true);
+
+        testStore.setOne({key: 2, value: 1});
+
+        testComponent1.update();
+        testComponent2.update();
+        expect(testComponent1.contains('2')).toEqual(true);
+        expect(testComponent2.contains('1')).toEqual(true);
+    });
+
+    it('should trigger update in component on setEntities of entity', function () {
+        const testStore = createEntityStore<TestObject>({
+            selectIdFunction: (entity) => entity.key,
+        });
+        testStore.setAll(testEntities);
+
+        const testComponent1 = mount(
+            <TestComponent testStore={testStore} propertyKey={1} uniqueId={new Date().getTime() + '1'} />
+        );
+
+        const testComponent2 = mount(
+            <TestComponent testStore={testStore} propertyKey={2} uniqueId={new Date().getTime() + '2'} />
+        );
+
+        expect(testComponent1.contains('1')).toEqual(true);
+        expect(testComponent2.contains('2')).toEqual(true);
+
+        testStore.setEntities([...testStore.getAll().filter((e) => e.key !== 1), {key: 1, value: 2}]);
+
+        testComponent1.update();
+        testComponent2.update();
+
+        expect(testComponent1.contains('1')).toEqual(false);
+        expect(testComponent1.contains('2')).toEqual(true);
+
+        testStore.setEntities([...testStore.getAll().filter((e) => e.key !== 2), {key: 2, value: 1}]);
+
+        testComponent1.update();
+        testComponent2.update();
+
+        expect(testComponent1.contains('2')).toEqual(true);
+        expect(testComponent2.contains('1')).toEqual(true);
+    });
+
+    it('DynamicLoadingStore should trigger update in component on change of entity', function () {
+        const testStore = createDynamicLoadingStore<TestObject>({
+            selectIdFunction: (entity) => entity.key,
+            loadFunction: (id) => of(testEntities.filter((e) => e.key === id)[0]),
+        });
+        testStore.setAll(testEntities);
+
+        const testComponent1 = mount(
+            <TestComponent uniqueId={new Date().getTime() + '1'} testStore={testStore} propertyKey={1} />
+        );
+
+        const testComponent2 = mount(
+            <TestComponent propertyKey={2} testStore={testStore} uniqueId={new Date().getTime() + '2'} />
+        );
+
+        expect(testComponent1.contains('1')).toEqual(true);
+        expect(testComponent2.contains('2')).toEqual(true);
+
+        // testStore.setOne({key: 1, value: 2});
+        testStore.setEntities([...testStore.getAll().filter((e) => e.key !== 1), {key: 1, value: 2}]);
+
+        testComponent1.update();
+        testComponent2.update();
+
+        expect(testComponent1.contains('1')).toEqual(false);
+        expect(testComponent1.contains('2')).toEqual(true);
+
+        // testStore.setOne({key: 2, value: 1});
+        testStore.setEntities([...testStore.getAll().filter((e) => e.key !== 2), {key: 2, value: 1}]);
+
+        testComponent1.update();
+        testComponent2.update();
+        expect(testComponent1.contains('2')).toEqual(true);
+        expect(testComponent2.contains('1')).toEqual(true);
+    });
+
+    it('DynamicLoadingStore should trigger update in component subscribed to all on change of entity', function () {
+        const testStore = createEntityStore<TestObject>({
+            selectIdFunction: (entity) => entity.key,
+        });
+        testStore.setEntities(testEntities);
+
+        const testComponent1 = mount(<TestComponent testStore={testStore} uniqueId={new Date().getTime() + '1'} />);
+
+        expect(testComponent1.html()).toEqual('012');
+
+        testStore.removeOneById(1);
+
+        testComponent1.update();
+
+        expect(testComponent1.html()).toEqual('02');
+
+        testStore.setOne({key: 2, value: 1});
+
+        testComponent1.update();
+        expect(testComponent1.html()).toEqual('01');
+    });
+
+    it('PersistentEntityStore should trigger update in component on change of entity', function () {
+        const testStore = createPersistentEntityStore<TestObject>({
+            selectIdFunction: (entity) => entity.key,
+            storageKey: 'tmp',
+            storageType: sessionStorage,
         });
         testStore.setAll(testEntities);
 
