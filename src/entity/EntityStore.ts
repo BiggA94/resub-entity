@@ -50,7 +50,7 @@ export class EntityStore<entity, id extends idType = number> extends StoreBase {
 
         // now trigger for the newly added ones
         entities.forEach((entity) =>
-            this.trigger(formCompoundKey(String(this.entityHandler.getId(entity)), triggerEntityKey))
+            this.trigger(formCompoundKey(String(this.entityHandler.getId(entity)), triggerEntityKey)),
         );
 
         this.trigger(triggerEntityKey);
@@ -59,7 +59,7 @@ export class EntityStore<entity, id extends idType = number> extends StoreBase {
     }
 
     @autoSubscribeWithKey(triggerEntityKey)
-    public getOne(@key id: id): entity | undefined {
+    public getOne(id: id): entity | undefined {
         return this.entityHandler.getOne(id);
     }
 
@@ -85,7 +85,7 @@ export class EntityStore<entity, id extends idType = number> extends StoreBase {
     }
 
     @autoSubscribeWithKey(triggerEntityKey)
-    public hasOne(@key id: id): boolean {
+    public hasOne(id: id): boolean {
         // todo: subscribe per id
         return this.entityHandler.hasOne(id);
     }
@@ -114,8 +114,8 @@ export class EntityStore<entity, id extends idType = number> extends StoreBase {
 }
 
 // as @param does not work here, we manually apply key here
-//key(EntityStore.prototype, 'getOne', 0);
-//key(EntityStore.prototype, 'hasOne', 0);
+key(EntityStore.prototype, 'getOne', 0);
+key(EntityStore.prototype, 'hasOne', 0);
 
 export interface EntityStoreProperties<entity, id extends idType = number> {
     throttleMs?: number;
@@ -125,7 +125,7 @@ export interface EntityStoreProperties<entity, id extends idType = number> {
 }
 
 export function createEntityStore<entity, id extends idType = number>(
-    props: EntityStoreProperties<entity, id>
+    props: EntityStoreProperties<entity, id>,
 ): EntityStore<entity, id> {
     return new EntityStore<entity, id>(props);
 }

@@ -21,7 +21,6 @@ interface TestState<S> {
 
 class TestComponent extends ComponentBase<TestParameters<TestObject>, TestState<TestObject>> {
     protected _buildState(props: TestParameters<TestObject>): Partial<TestState<TestObject>> | undefined {
-        console.log('buildstate here');
         if (props.propertyKey) {
             return {
                 testObject: props.testStore.getOne(props.propertyKey),
