@@ -54,7 +54,7 @@ class SuspenseWrapper<entity> {
                 (error) => {
                     this.error = error;
                     this.status = 'error';
-                },
+                }
             );
         } else {
             this.result = result;
@@ -88,13 +88,11 @@ export class SuspenseStore<entity, id extends idType = number> extends DynamicLo
     loadOne(
         id: id,
         _currTimestamp?: Date,
-        addPipesFunction?: (observable: Observable<entity>) => Observable<entity>,
+        addPipesFunction?: (observable: Observable<entity>) => Observable<entity>
     ): Observable<entity> {
         let result = super.loadOne(id, _currTimestamp, addPipesFunction);
         this.loadingObservables.set(id, result);
-        result = result.pipe(
-            tap(() => this.loadingObservables.delete(id)),
-        );
+        result = result.pipe(tap(() => this.loadingObservables.delete(id)));
         // todo: could introduce problems, if one is actually subscribing to this observable
         result.subscribe();
         return result;
@@ -104,7 +102,7 @@ export class SuspenseStore<entity, id extends idType = number> extends DynamicLo
 export type SuspenseStoreProperties<entity, id extends idType = number> = DynamicLoadingStoreProperties<entity, id>;
 
 export function createSuspenseStore_experimental<entity, id extends idType = number>(
-    props: SuspenseStoreProperties<entity, id>,
+    props: SuspenseStoreProperties<entity, id>
 ): SuspenseStore<entity, id> {
     return new SuspenseStore<entity, id>(props);
 }
