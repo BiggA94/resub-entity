@@ -66,6 +66,14 @@ export class DynamicLoadingStore<entity, id extends idType = number> extends Sel
         return value;
     }
 
+    protected getLastLoadedTime(id: id): Date | undefined {
+        return this.lastLoadedAt.get(id);
+    }
+
+    protected isCurrentlyLoading(id: id): boolean {
+        return this.currentlyLoading.has(id);
+    }
+
     protected cacheIsInvalid<P>(
         value: Readonly<entity> | undefined,
         cachedTimestamp: Date | undefined,
