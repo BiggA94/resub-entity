@@ -41,7 +41,10 @@ export class PersistentEntityStore<entity, id extends idType = number> extends E
     }
 
     public persist(): void {
-        this.storage.setItem(this.calculateStoreKey(), JSON.stringify(this.entityHandler.getAll(), this.props.replacer));
+        this.storage.setItem(
+            this.calculateStoreKey(),
+            JSON.stringify(this.entityHandler.getAll(), this.props.replacer)
+        );
     }
 
     public load(): void {
@@ -64,7 +67,7 @@ export interface PersistentEntityStoreProperties<entity, id extends idType = num
 }
 
 export function createPersistentEntityStore<entity, id extends idType = number>(
-    props: PersistentEntityStoreProperties<entity, id>,
+    props: PersistentEntityStoreProperties<entity, id>
 ): PersistentEntityStore<entity, id> {
     return new PersistentEntityStore<entity, id>(props);
 }

@@ -34,7 +34,7 @@ interface TestSetObject {
     value: Set<string>;
 }
 
-describe('PersistentEntityStore', function() {
+describe('PersistentEntityStore', function () {
     const testEntities = [
         {key: '0', value: '0'},
         {key: '1', value: '1'},
@@ -47,7 +47,7 @@ describe('PersistentEntityStore', function() {
         {key: '2', value: new Set(['2'])},
     ];
 
-    it('should load saved values', function() {
+    it('should load saved values', function () {
         const store = createPersistentEntityStore<TestObject, string>({
             selectIdFunction: (entity) => entity.key,
             storageKey: 'persistentStoreTest',
@@ -67,12 +67,12 @@ describe('PersistentEntityStore', function() {
         expect(store2.getAll()).toHaveLength(3);
     });
 
-    it('should persist sets', function() {
+    it('should persist sets', function () {
         const store = createPersistentEntityStore<TestSetObject, string>({
             selectIdFunction: (entity) => entity.key,
             storageKey: 'persistentStoreTest',
             storageType: sessionStorage,
-            replacer: (key, value) => value instanceof Set ? [...value] : value,
+            replacer: (key, value) => (value instanceof Set ? [...value] : value),
         });
 
         store.setAll(testSetEntities);
@@ -82,13 +82,13 @@ describe('PersistentEntityStore', function() {
             selectIdFunction: (entity) => entity.key,
             storageKey: 'persistentStoreTest',
             storageType: sessionStorage,
-            reviver: (key, value) => key === 'value' ? new Set(value) : value,
+            reviver: (key, value) => (key === 'value' ? new Set(value) : value),
         });
 
         store2.load();
         expect(store2.getAll()).toHaveLength(3);
         let i = 0;
-        for (let testSet of testSetEntities) {
+        for (const testSet of testSetEntities) {
             expect(store2.getOne(testSet.key)).toEqual(testSetEntities[i++]);
         }
     });
