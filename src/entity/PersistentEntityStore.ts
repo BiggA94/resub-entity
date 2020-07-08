@@ -41,13 +41,13 @@ export class PersistentEntityStore<entity, id extends idType = number> extends E
     }
 
     public persist(): void {
-        this.storage.setItem(this.calculateStoreKey(), JSON.stringify(this.entityHandler.getAll()));
+        this.storage.setItem(this.calculateStoreKey(), JSON.stringify(this.entityHandler.getAll(), this.props.replacer));
     }
 
     public load(): void {
         const item: string | null = this.storage.getItem(this.calculateStoreKey());
         if (item) {
-            const entities: ReadonlyArray<entity> = JSON.parse(item);
+            const entities: ReadonlyArray<entity> = JSON.parse(item, this.props.reviver);
             this.entityHandler.setEntities(entities);
             this.trigger(triggerEntityKey);
         }
@@ -59,10 +59,12 @@ export interface PersistentEntityStoreProperties<entity, id extends idType = num
     storageType?: Storage;
     storageKey: string;
     loadOnInit?: boolean;
+    replacer?: (key: string, value: any) => any;
+    reviver?: (key: string, value: any) => any;
 }
 
 export function createPersistentEntityStore<entity, id extends idType = number>(
-    props: PersistentEntityStoreProperties<entity, id>
+    props: PersistentEntityStoreProperties<entity, id>,
 ): PersistentEntityStore<entity, id> {
     return new PersistentEntityStore<entity, id>(props);
 }
