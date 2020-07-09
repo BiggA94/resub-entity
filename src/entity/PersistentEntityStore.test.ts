@@ -82,7 +82,7 @@ describe('PersistentEntityStore', function () {
             selectIdFunction: (entity) => entity.key,
             storageKey: 'persistentStoreTest',
             storageType: sessionStorage,
-            reviver: (key, value) => (key === 'value' ? new Set(value) : value),
+            reviver: (key, value) => (key === 'value' ? new Set(value as Array<string>) : value),
         });
 
         store2.load();
