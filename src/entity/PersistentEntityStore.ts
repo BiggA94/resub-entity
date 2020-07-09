@@ -62,8 +62,8 @@ export interface PersistentEntityStoreProperties<entity, id extends idType = num
     storageType?: Storage;
     storageKey: string;
     loadOnInit?: boolean;
-    replacer?: (key: string, value: any) => any;
-    reviver?: (key: string, value: any) => any;
+    replacer?: (key: string, value: unknown) => unknown;
+    reviver?: (key: string, value: unknown) => unknown;
 }
 
 export function createPersistentEntityStore<entity, id extends idType = number>(
