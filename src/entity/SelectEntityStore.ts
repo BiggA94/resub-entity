@@ -53,6 +53,12 @@ export class SelectEntityStore<entity, id extends idType = number> extends Entit
         }
         return updatedId;
     }
+
+    clear(): ReadonlyArray<id> {
+        const ids = super.clear();
+        this.trigger(triggerSelectedKey);
+        return ids;
+    }
 }
 
 export type SelectEntityStoreProperties<entity, id extends idType = number> = EntityStoreProperties<entity, id>;
