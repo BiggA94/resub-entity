@@ -145,7 +145,7 @@ export interface EntityStoreProperties<entity, id extends idType = number> {
     throttleMs?: number;
     bypassTriggerBlocks?: boolean;
     selectIdFunction: selectIdFunctionType<entity, id>;
-    sortFunction?: sortFunctionType<entity, id>;
+    sortFunction?: sortFunctionType<entity>;
 }
 
 export function createEntityStore<entity, id extends idType = number>(

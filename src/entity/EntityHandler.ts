@@ -87,6 +87,9 @@ export class EntityHandler<entity, id extends idType = number> {
         return entities.filter((entity) => entity !== undefined) as ReadonlyArray<entity>;
     }
 
+    /**
+     * returns all values sorted via given sort function
+     */
     public getAll(): ReadonlyArray<entity> {
         const entities = Array.from(this.entities.values());
         const sortedEntities = entities.sort(this.sortFunction);
