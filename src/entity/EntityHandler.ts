@@ -28,16 +28,16 @@ export type idType = number | string;
 export type idOrIds = idType | ReadonlyArray<idType>;
 
 export type selectIdFunctionType<entity, id extends idType = number> = (entity: Readonly<entity>) => id;
-export type sortFunctionType<entity, id extends idType = number> = (entity1: entity, entity2: entity) => number;
+export type sortFunctionType<entity> = (entity1: entity, entity2: entity) => number;
 
 export class EntityHandler<entity, id extends idType = number> {
     private entities: Map<id, entity> = new Map();
     private ids: Set<id> = new Set();
 
     private readonly selectIdFunction: selectIdFunctionType<entity, id>;
-    private readonly sortFunction: sortFunctionType<entity, id>;
+    private readonly sortFunction: sortFunctionType<entity>;
 
-    constructor(selectIdFunction: selectIdFunctionType<entity, id>, sortFunction?: sortFunctionType<entity, id>) {
+    constructor(selectIdFunction: selectIdFunctionType<entity, id>, sortFunction?: sortFunctionType<entity>) {
         this.selectIdFunction = selectIdFunction;
         this.sortFunction = sortFunction || defaultSortFunction(selectIdFunction);
     }

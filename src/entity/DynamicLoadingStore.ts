@@ -74,7 +74,7 @@ export class DynamicLoadingStore<entity, id extends idType = number> extends Sel
         return this.currentlyLoading.has(id);
     }
 
-    protected cacheIsInvalid<P>(
+    protected cacheIsInvalid(
         value: Readonly<entity> | undefined,
         cachedTimestamp: Date | undefined,
         currentTimestamp: Date,
