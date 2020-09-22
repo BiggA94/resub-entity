@@ -30,7 +30,6 @@ import {autoSubscribeWithKey, StoreBase} from 'resub';
 export const triggerPaginatedAllKey = '!@ENTITY_PAGINATE_ALL_TRIGGER@!';
 
 export class PaginationStore<entity, id extends idType = number> extends DynamicLoadingStore<entity, id> {
-
     /**
      * gives the index of the last element, that was loaded via pagination.
      * this is needed in order to prevent missing items.
@@ -38,7 +37,9 @@ export class PaginationStore<entity, id extends idType = number> extends Dynamic
      */
     protected lastSortedIndex = -1;
 
-    private paginatedLoadFunction: (parameters: PaginatedLoadFunctionProperties<entity, id>) => Observable<Array<entity>>;
+    private readonly paginatedLoadFunction: (
+        parameters: PaginatedLoadFunctionProperties<id>
+    ) => Observable<Array<entity>>;
 
     constructor(props: PaginationStoreProperties<entity, id>) {
         super(props);
@@ -47,7 +48,7 @@ export class PaginationStore<entity, id extends idType = number> extends Dynamic
 
     setOne(entity: Readonly<entity>): id {
         StoreBase.pushTriggerBlock();
-        let one = super.setOne(entity);
+        const one = super.setOne(entity);
         this.trigger(triggerPaginatedAllKey);
         this.lastSortedIndex = -1;
         StoreBase.popTriggerBlock();
@@ -56,7 +57,7 @@ export class PaginationStore<entity, id extends idType = number> extends Dynamic
 
     setAll(entities: Array<entity>): ReadonlyArray<id> {
         StoreBase.pushTriggerBlock();
-        let all = super.setAll(entities);
+        const all = super.setAll(entities);
         this.trigger(triggerPaginatedAllKey);
         this.lastSortedIndex = -1;
         StoreBase.popTriggerBlock();
@@ -66,17 +67,17 @@ export class PaginationStore<entity, id extends idType = number> extends Dynamic
     // todo: allow pagination for search, not only for all items
     @autoSubscribeWithKey(triggerPaginatedAllKey)
     getPaginated(pageSize: number, pageNumber: number): ReadonlyArray<entity> {
-        let minIndex = pageSize * (pageNumber);
-        let maxIndex = minIndex + pageSize;
+        const minIndex = pageSize * pageNumber;
+        const maxIndex = minIndex + pageSize;
 
-        let entities = this.entityHandler.getAll();
+        const entities = this.entityHandler.getAll();
         if (entities.length < maxIndex && !this.loadObservable) {
             // we need to load the entities in front of it also..
             if (this.lastSortedIndex >= maxIndex) {
                 // we already tried, but there are no more
             } else {
-                let lastLoaded = entities.length > 0 ? this.entityHandler.getId(entities[entities.length - 1]) : null;
-                let lastIndex = entities.length - 1;
+                const lastLoaded = entities.length > 0 ? this.entityHandler.getId(entities[entities.length - 1]) : null;
+                const lastIndex = entities.length - 1;
 
                 this.loadPaginated(pageSize, pageNumber, lastLoaded, lastIndex).subscribe();
             }
@@ -87,10 +88,15 @@ export class PaginationStore<entity, id extends idType = number> extends Dynamic
 
     private loadObservable: Observable<Array<entity>> | undefined;
 
-    loadPaginated(pageSize: number, pageNumber: number, lastLoaded: id | null, lastIndex: number): Observable<Array<entity>> {
-        let minIndex = pageSize * (pageNumber);
+    loadPaginated(
+        pageSize: number,
+        pageNumber: number,
+        lastLoaded: id | null,
+        lastIndex: number
+    ): Observable<Array<entity>> {
+        const minIndex = pageSize * pageNumber;
 
-        let resultSubject = new ReplaySubject<Array<entity>>(1);
+        const resultSubject = new ReplaySubject<Array<entity>>(1);
 
         if (!this.loadObservable) {
             // we need to load the entities in front of it also..
@@ -100,7 +106,7 @@ export class PaginationStore<entity, id extends idType = number> extends Dynamic
                 limit: pageSize,
                 offset: minIndex,
             });
-            this.loadObservable.subscribe(values => {
+            this.loadObservable.subscribe((values) => {
                 this.setAll(values);
                 this.lastSortedIndex = values.length - 1;
                 resultSubject.next(values);
@@ -109,7 +115,7 @@ export class PaginationStore<entity, id extends idType = number> extends Dynamic
                 this.loadObservable = undefined;
             });
         } else {
-            this.loadObservable.subscribe(values => {
+            this.loadObservable.subscribe((values) => {
                 resultSubject.next(values);
             });
         }
@@ -117,19 +123,21 @@ export class PaginationStore<entity, id extends idType = number> extends Dynamic
     }
 }
 
-export type PaginatedLoadFunctionProperties<entity, id extends idType = number> = {
+export type PaginatedLoadFunctionProperties<id extends idType = number> = {
     lastLoaded: id | null;
+    // check whether necessary
     lastIndex: number;
     limit: number;
     offset: number;
-}
+};
 
-export interface PaginationStoreProperties<entity, id extends idType = number> extends DynamicLoadingStoreProperties<entity, id> {
+export interface PaginationStoreProperties<entity, id extends idType = number>
+    extends DynamicLoadingStoreProperties<entity, id> {
     paginatedLoadFunction: PaginationStore<entity, id>['paginatedLoadFunction'];
 }
 
 export function createPaginationStore<entity, id extends idType = number>(
-    props: PaginationStoreProperties<entity, id>,
+    props: PaginationStoreProperties<entity, id>
 ): PaginationStore<entity, id> {
     return new PaginationStore<entity, id>(props);
 }

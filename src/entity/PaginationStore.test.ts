@@ -26,7 +26,7 @@ import {createPaginationStore} from './PaginationStore';
 import {Observable, of} from 'rxjs';
 
 function loadPaginated(offset: number, limit: number): Observable<Array<TestClass>> {
-    let result: Array<TestClass> = new Array<TestClass>();
+    const result: Array<TestClass> = new Array<TestClass>();
     for (let count = offset; count < offset + limit; count++) {
         result.push({id: count});
     }
@@ -39,30 +39,29 @@ function load(id: number): Observable<TestClass> {
 
 type TestClass = {
     id: number;
-}
+};
 
 describe('PaginationStore', () => {
     it('should return values with correct indices', async (done) => {
-        let testStore = createPaginationStore<TestClass>({
-            loadFunction: id => load(id),
-            paginatedLoadFunction: parameters => loadPaginated(parameters.offset, parameters.limit),
-            selectIdFunction: entity => entity.id,
+        const testStore = createPaginationStore<TestClass>({
+            loadFunction: (id) => load(id),
+            paginatedLoadFunction: (parameters) => loadPaginated(parameters.offset, parameters.limit),
+            selectIdFunction: (entity) => entity.id,
         });
 
-        let loadPaginatedSpy = jest.spyOn(testStore, 'loadPaginated');
+        const loadPaginatedSpy = jest.spyOn(testStore, 'loadPaginated');
 
         testStore.loadPaginated(5, 0, null, -1).subscribe(async () => {
-                expect(testStore.getPaginated(1, 0)).toContainEqual({id: 0});
-                expect(testStore.getPaginated(2, 1)).toContainEqual({id: 2});
-                expect(testStore.getPaginated(2, 1)).toContainEqual({id: 3});
-                expect(loadPaginatedSpy).toHaveBeenCalledTimes(1);
+            expect(testStore.getPaginated(1, 0)).toContainEqual({id: 0});
+            expect(testStore.getPaginated(2, 1)).toContainEqual({id: 2});
+            expect(testStore.getPaginated(2, 1)).toContainEqual({id: 3});
+            expect(loadPaginatedSpy).toHaveBeenCalledTimes(1);
 
-                // only 4 is loaded for now
-                expect(testStore.getPaginated(2, 2)).toEqual([{id: 4}]);
-                expect(loadPaginatedSpy).toHaveBeenCalledTimes(2);
-                expect(testStore.getPaginated(2, 2)).toEqual([{id: 4}, {id: 5}]);
-                done();
-            },
-        );
+            // only 4 is loaded for now
+            expect(testStore.getPaginated(2, 2)).toEqual([{id: 4}]);
+            expect(loadPaginatedSpy).toHaveBeenCalledTimes(2);
+            expect(testStore.getPaginated(2, 2)).toEqual([{id: 4}, {id: 5}]);
+            done();
+        });
     });
 });

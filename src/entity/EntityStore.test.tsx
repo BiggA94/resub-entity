@@ -33,9 +33,10 @@ interface TestObject {
     value: number;
 }
 
-interface TestParameters<P> {
+interface TestParameters<P, searchType = string> {
     uniqueId: string;
-    testStore: EntityStore<P>;
+    testStore: EntityStore<P, number, searchType>;
+    search?: searchType;
     propertyKey?: number;
 }
 
@@ -43,9 +44,16 @@ interface TestState<S> {
     testObject: S | ReadonlyArray<S>;
 }
 
-class TestComponent extends ComponentBase<TestParameters<TestObject>, TestState<TestObject>> {
-    protected _buildState(props: TestParameters<TestObject>): Partial<TestState<TestObject>> | undefined {
-        if (props.propertyKey) {
+class TestComponent<searchType = string> extends ComponentBase<
+    TestParameters<TestObject, searchType>,
+    TestState<TestObject>
+> {
+    protected _buildState(props: TestParameters<TestObject, searchType>): Partial<TestState<TestObject>> | undefined {
+        if (props.search) {
+            return {
+                testObject: props.testStore.search(props.search),
+            };
+        } else if (props.propertyKey) {
             return {
                 testObject: props.testStore.getOne(props.propertyKey),
             };
@@ -259,14 +267,60 @@ describe('EntityStore', function () {
     });
 
     it('should return entries, that match the search criteria', function () {
-        const testStore = createEntityStore<TestObject>({
+        const testStore = createEntityStore<TestObject, number, number>({
+            selectIdFunction: (entity) => entity.key,
+            searchFunction: (searchParameter, entity) => entity.value === searchParameter,
+        });
+        testStore.setAll(testEntities);
+
+        const testObjects = testStore.search(2);
+        expect(testObjects).toHaveLength(1);
+        expect(testObjects).toStrictEqual([{key: 2, value: 2}]);
+    });
+
+    it('should return entries, that match the search with own filter criteria', function () {
+        const testStore = createEntityStore<TestObject, number, number>({
             selectIdFunction: (entity) => entity.key,
         });
         testStore.setAll(testEntities);
 
-        const testObjects = testStore.search((entity: TestObject) => entity.value === 2);
+        const testObjects = testStore.searchWithOwnFilter((entity) => entity.value === 2);
         expect(testObjects).toHaveLength(1);
         expect(testObjects).toStrictEqual([{key: 2, value: 2}]);
+    });
+
+    it('should trigger update in component via search on change of entity', function () {
+        const testStore = createEntityStore<TestObject, number, number>({
+            selectIdFunction: (entity) => entity.key,
+            searchFunction: (searchParameter, entity) => entity.value == searchParameter,
+        });
+        testStore.setAll(testEntities);
+
+        const testComponent1 = mount(
+            <TestComponent uniqueId={new Date().getTime() + '1'} testStore={testStore} propertyKey={1} search={1} />
+        );
+
+        const testComponent2 = mount(
+            <TestComponent propertyKey={2} testStore={testStore} uniqueId={new Date().getTime() + '2'} search={2} />
+        );
+
+        expect(testComponent1.contains('1')).toEqual(true);
+        expect(testComponent2.contains('2')).toEqual(true);
+
+        testStore.setOne({key: 1, value: 2});
+
+        testComponent1.update();
+        testComponent2.update();
+
+        expect(testComponent1.contains('1')).toEqual(false);
+        expect(testComponent1.contains('2')).toEqual(true);
+
+        testStore.setOne({key: 2, value: 1});
+
+        testComponent1.update();
+        testComponent2.update();
+        expect(testComponent1.contains('2')).toEqual(true);
+        expect(testComponent2.contains('1')).toEqual(true);
     });
 
     it('should remove entity by id', function () {

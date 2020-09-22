@@ -161,6 +161,13 @@ export class DynamicLoadingStore<entity, id extends idType = number> extends Sel
             this.dynamicValidUntil?.delete(ref);
         }
     }
+
+    // no autosubscription per key for now
+    @autoSubscribeWithKey(triggerEntityKey)
+    getMultiple(ids: ReadonlyArray<id>): ReadonlyArray<entity> {
+        // use get function, in order to load all entities, that are not already loaded
+        return ids.map(this.getOne.bind(this)).filter((entity) => entity !== undefined) as ReadonlyArray<entity>;
+    }
 }
 
 export interface DynamicLoadingStoreProperties<entity, id extends idType = number>
