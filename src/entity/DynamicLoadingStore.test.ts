@@ -36,6 +36,8 @@ const testValues = new Map<number, TestClass>([
     [1, {id: 1, value: 'one'}],
     [2, {id: 2, value: 'two'}],
     [3, {id: 3, value: 'three'}],
+    [4, {id: 4, value: 'four'}],
+    [5, {id: 5, value: 'five'}],
 ]);
 
 describe('DynamicLoadingStore', function () {
@@ -109,5 +111,51 @@ describe('DynamicLoadingStore', function () {
         const removedEntities = eh.setEntities(newEntities);
         expect(removedEntities).toEqual(['b', 'c', 'd']);
         expect(eh.getAll()).toEqual(newEntities);
+    });
+
+    it('should load values for search dynamically', function (done) {
+        let loadingOffset = 0;
+        const store = createDynamicLoadingStore<TestClass, number, number>({
+            selectIdFunction: (entity) => entity.id,
+            loadFunction: (id) => of(testValues.get(id) || {id: id, value: 'id:' + id}),
+            searchFunction: (searchParameter, entity) => entity.value === 'id:' + searchParameter,
+            searchLoadFunction: (searchParams) => of(Array.of(searchParams + loadingOffset)),
+        });
+
+        const first = store.loadOne(1);
+        first.subscribe((value) => {
+            expect(value).toEqual(testValues.get(1));
+            expect(store.getAll()).toHaveLength(1);
+
+            expect(store.search(1)).toEqual(testValues.get(1));
+        });
+
+        const second = store.loadOne(2);
+        second.subscribe((value) => {
+            expect(value).toEqual(testValues.get(2));
+            expect(store.getAll()).toHaveLength(2);
+            expect(store.search(2)).toEqual(testValues.get(2));
+        });
+
+        // first time, values are loading asynchronously
+        expect(store.search(3)).toHaveLength(0);
+        // second time, the id's should be present, but ot the values
+        expect(store.search(3)).toHaveLength(0);
+        // third time, the values should be loaded
+        expect(store.search(3)).toHaveLength(1);
+
+        loadingOffset = 2;
+
+        expect(store.search(3)).toContainEqual(testValues.get(3));
+
+        // force load of new search items
+        // here, ids are loaded
+        store.loadSearched(3);
+        // now, entities are loading
+        store.search(3);
+        // and now the entities are loaded
+        expect(store.search(3)).toContainEqual(testValues.get(5));
+
+        forkJoin([first, second].map((p) => p.toPromise())).subscribe(() => done());
     });
 });

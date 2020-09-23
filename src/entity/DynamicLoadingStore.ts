@@ -38,17 +38,23 @@ const DEFAULT_CACHE_INVALIDATION_TIME = 60 * 5;
  * The DynamicLoadingStore tries to retrieve the object from the Backend, if not available.
  * This is only possible, if the id contains the link to the entity, thus we only allow string here.
  */
-export class DynamicLoadingStore<entity, id extends idType = number> extends SelectEntityStore<entity, id> {
+export class DynamicLoadingStore<entity, id extends idType = number, searchType = string> extends SelectEntityStore<
+    entity,
+    id,
+    searchType
+> {
     private readonly loadFunction: (id: id) => Observable<entity>;
+    private readonly searchLoadFunction?: (searchParams: searchType) => Observable<ReadonlyArray<id>>;
     private currentlyLoading: Set<id> = new Set<id>();
     private lastLoadedAt: Map<id, Date> = new Map<id, Date>();
     private readonly hashTimeSec: number;
     private readonly dynamicCacheTimeFunction?: (entity: entity) => Date | undefined;
     private readonly dynamicValidUntil?: Map<id, Date>;
 
-    constructor(props: DynamicLoadingStoreProperties<entity, id>) {
+    constructor(props: DynamicLoadingStoreProperties<entity, id, searchType>) {
         super(props);
         this.loadFunction = props.loadFunction;
+        this.searchLoadFunction = props.searchLoadFunction;
         this.hashTimeSec = props.hashTimeSec || DEFAULT_CACHE_INVALIDATION_TIME;
         this.dynamicCacheTimeFunction = props.dynamicValidUntilFunction;
         if (props.dynamicValidUntilFunction) {
@@ -168,11 +174,34 @@ export class DynamicLoadingStore<entity, id extends idType = number> extends Sel
         // use get function, in order to load all entities, that are not already loaded
         return ids.map(this.getOne.bind(this)).filter((entity) => entity !== undefined) as ReadonlyArray<entity>;
     }
+
+    /**
+     * forceLoad background loading of search results
+     * @param searchParam
+     */
+    loadSearched(searchParam: searchType): void {
+        if (this.searchLoadFunction) {
+            this.searchLoadFunction(searchParam).subscribe((resultIds) => {
+                this.searchResults.set(searchParam, resultIds);
+                this.trigger(triggerEntityKey);
+            });
+        }
+    }
+
+    search(searchParam: searchType): ReadonlyArray<entity> {
+        const searchResult = super.search(searchParam);
+        if (searchResult.length == 0) {
+            // only load results, if they can't be found via internal search
+            this.loadSearched(searchParam);
+        }
+        return searchResult;
+    }
 }
 
-export interface DynamicLoadingStoreProperties<entity, id extends idType = number>
-    extends SelectEntityStoreProperties<entity, id> {
+export interface DynamicLoadingStoreProperties<entity, id extends idType = number, searchType = string>
+    extends SelectEntityStoreProperties<entity, id, searchType> {
     loadFunction: (id: id) => Observable<entity>;
+    searchLoadFunction?: DynamicLoadingStore<entity, id, searchType>['searchLoadFunction'];
     hashTimeSec?: number;
     /**
      * This function returns a Date, until the data is valid.
@@ -182,8 +211,8 @@ export interface DynamicLoadingStoreProperties<entity, id extends idType = numbe
     dynamicValidUntilFunction?: (entity: entity) => Date | undefined;
 }
 
-export function createDynamicLoadingStore<entity, id extends idType = number>(
-    props: DynamicLoadingStoreProperties<entity, id>
-): DynamicLoadingStore<entity, id> {
-    return new DynamicLoadingStore<entity, id>(props);
+export function createDynamicLoadingStore<entity, id extends idType = number, searchType = string>(
+    props: DynamicLoadingStoreProperties<entity, id, searchType>
+): DynamicLoadingStore<entity, id, searchType> {
+    return new DynamicLoadingStore<entity, id, searchType>(props);
 }
