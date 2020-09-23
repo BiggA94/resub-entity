@@ -28,12 +28,14 @@ import {AutoSubscribeStore, autoSubscribeWithKey, formCompoundKey, key, StoreBas
 export const triggerEntityKey = '!@ENTITY_TRIGGER@!';
 
 @AutoSubscribeStore
-export class EntityStore<entity, id extends idType = number> extends StoreBase {
+export class EntityStore<entity, id extends idType = number, searchType = string> extends StoreBase {
+    protected readonly searchFunction?: (searchParameter: searchType, entity: entity) => boolean;
     protected entityHandler: EntityHandler<entity, id>;
 
-    constructor(props: EntityStoreProperties<entity, id>) {
+    constructor(props: EntityStoreProperties<entity, id, searchType>) {
         super(props.throttleMs, props.bypassTriggerBlocks || false);
         this.entityHandler = new EntityHandler<entity, id>(props.selectIdFunction, props.sortFunction);
+        this.searchFunction = props.searchFunction;
     }
 
     protected getTriggerForId(id: id): string {
@@ -130,10 +132,33 @@ export class EntityStore<entity, id extends idType = number> extends StoreBase {
         return removedEntity;
     }
 
-    // todo: needs proper subscriptions
+    protected searchResults: Map<searchType, ReadonlyArray<id>> = new Map<searchType, ReadonlyArray<id>>();
+
+    // todo: needs proper subscriptions (is this possible?)
     @autoSubscribeWithKey(triggerEntityKey)
-    public search(searchFilter: (entity: entity) => boolean): ReadonlyArray<entity> {
-        return this.entityHandler.getAll().filter(searchFilter);
+    public search(searchParam: searchType): ReadonlyArray<entity> {
+        if (!this.searchFunction) {
+            throw new Error('no search function specified');
+        }
+        const searchResults = this.searchResults.get(searchParam);
+        if (searchResults) {
+            return (
+                searchResults
+                    .map(this.getOne.bind(this))
+                    // no !entity, or else we would not allow 0 or null as return value
+                    .filter((entity) => entity !== undefined) as ReadonlyArray<entity>
+            );
+        } else {
+            const searchResults = this.getAll().filter(this.searchFunction.bind(this, searchParam));
+            const resultIds = searchResults.map(this.getId.bind(this));
+            this.searchResults.set(searchParam, resultIds);
+            return searchResults;
+        }
+    }
+
+    @autoSubscribeWithKey(triggerEntityKey)
+    public searchWithOwnFilter(filter: (entity: entity) => boolean): ReadonlyArray<entity> {
+        return this.getAll().filter(filter);
     }
 }
 
@@ -141,15 +166,16 @@ export class EntityStore<entity, id extends idType = number> extends StoreBase {
 key(EntityStore.prototype, 'getOne', 0);
 key(EntityStore.prototype, 'hasOne', 0);
 
-export interface EntityStoreProperties<entity, id extends idType = number> {
+export interface EntityStoreProperties<entity, id extends idType = number, searchType = string> {
     throttleMs?: number;
     bypassTriggerBlocks?: boolean;
     selectIdFunction: selectIdFunctionType<entity, id>;
-    sortFunction?: sortFunctionType<entity, id>;
+    sortFunction?: sortFunctionType<entity>;
+    searchFunction?: EntityStore<entity, id, searchType>['searchFunction'];
 }
 
-export function createEntityStore<entity, id extends idType = number>(
-    props: EntityStoreProperties<entity, id>
-): EntityStore<entity, id> {
-    return new EntityStore<entity, id>(props);
+export function createEntityStore<entity, id extends idType = number, searchType = string>(
+    props: EntityStoreProperties<entity, id, searchType>
+): EntityStore<entity, id, searchType> {
+    return new EntityStore<entity, id, searchType>(props);
 }

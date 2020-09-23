@@ -25,10 +25,14 @@ SOFTWARE.
 import {idType} from './EntityHandler';
 import {EntityStore, EntityStoreProperties, triggerEntityKey} from './EntityStore';
 
-export class PersistentEntityStore<entity, id extends idType = number> extends EntityStore<entity, id> {
+export class PersistentEntityStore<entity, id extends idType = number, searchType = number> extends EntityStore<
+    entity,
+    id,
+    searchType
+> {
     private storage: Storage;
 
-    constructor(protected props: PersistentEntityStoreProperties<entity, id>) {
+    constructor(protected props: PersistentEntityStoreProperties<entity, id, searchType>) {
         super(props);
         this.storage = props.storageType || localStorage;
         if (props.loadOnInit) {
@@ -57,8 +61,8 @@ export class PersistentEntityStore<entity, id extends idType = number> extends E
     }
 }
 
-export interface PersistentEntityStoreProperties<entity, id extends idType = number>
-    extends EntityStoreProperties<entity, id> {
+export interface PersistentEntityStoreProperties<entity, id extends idType = number, searchType = number>
+    extends EntityStoreProperties<entity, id, searchType> {
     storageType?: Storage;
     storageKey: string;
     loadOnInit?: boolean;
@@ -66,8 +70,8 @@ export interface PersistentEntityStoreProperties<entity, id extends idType = num
     reviver?: (key: string, value: unknown) => unknown;
 }
 
-export function createPersistentEntityStore<entity, id extends idType = number>(
-    props: PersistentEntityStoreProperties<entity, id>
-): PersistentEntityStore<entity, id> {
-    return new PersistentEntityStore<entity, id>(props);
+export function createPersistentEntityStore<entity, id extends idType = number, searchType = number>(
+    props: PersistentEntityStoreProperties<entity, id, searchType>
+): PersistentEntityStore<entity, id, searchType> {
+    return new PersistentEntityStore<entity, id, searchType>(props);
 }

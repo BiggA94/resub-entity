@@ -28,7 +28,11 @@ import {autoSubscribeWithKey} from 'resub';
 
 export const triggerSelectedKey = '!@ENTITY_SELECT_TRIGGER@!';
 
-export class SelectEntityStore<entity, id extends idType = number> extends EntityStore<entity, id> {
+export class SelectEntityStore<entity, id extends idType = number, searchType = string> extends EntityStore<
+    entity,
+    id,
+    searchType
+> {
     protected entityId?: id;
 
     @autoSubscribeWithKey(triggerSelectedKey)
@@ -61,10 +65,14 @@ export class SelectEntityStore<entity, id extends idType = number> extends Entit
     }
 }
 
-export type SelectEntityStoreProperties<entity, id extends idType = number> = EntityStoreProperties<entity, id>;
+export type SelectEntityStoreProperties<
+    entity,
+    id extends idType = number,
+    searchType = string
+> = EntityStoreProperties<entity, id, searchType>;
 
-export function createSelectEntityStore<entity, id extends idType = number>(
-    props: SelectEntityStoreProperties<entity, id>
-): SelectEntityStore<entity, id> {
-    return new SelectEntityStore<entity, id>(props);
+export function createSelectEntityStore<entity, id extends idType = number, searchType = string>(
+    props: SelectEntityStoreProperties<entity, id, searchType>
+): SelectEntityStore<entity, id, searchType> {
+    return new SelectEntityStore<entity, id, searchType>(props);
 }
