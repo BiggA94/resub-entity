@@ -132,7 +132,7 @@ export class EntityStore<entity, id extends idType = number, searchType = string
         return removedEntity;
     }
 
-    protected searchResults: Map<searchType, ReadonlyArray<id>> = new Map<searchType, ReadonlyArray<id>>();
+    protected searchResults: Map<string, ReadonlyArray<id>> = new Map<string, ReadonlyArray<id>>();
 
     // todo: needs proper subscriptions (is this possible?)
     @autoSubscribeWithKey(triggerEntityKey)
@@ -140,7 +140,7 @@ export class EntityStore<entity, id extends idType = number, searchType = string
         if (!this.searchFunction) {
             throw new Error('no search function specified');
         }
-        const searchResults = this.searchResults.get(searchParam);
+        const searchResults = this.searchResults.get(JSON.stringify(searchParam));
         if (searchResults) {
             return (
                 searchResults
@@ -151,8 +151,26 @@ export class EntityStore<entity, id extends idType = number, searchType = string
         } else {
             const searchResults = this.getAll().filter(this.searchFunction.bind(this, searchParam));
             const resultIds = searchResults.map(this.getId.bind(this));
-            this.searchResults.set(searchParam, resultIds);
+            this.searchResults.set(JSON.stringify(searchParam), resultIds);
+            this.trigger(triggerEntityKey);
             return searchResults;
+        }
+    }
+
+    @autoSubscribeWithKey(triggerEntityKey)
+    public searchIds(searchParam: searchType): ReadonlyArray<id> {
+        if (!this.searchFunction) {
+            throw new Error('no search function specified');
+        }
+        const searchResults = this.searchResults.get(JSON.stringify(searchParam));
+        if (searchResults) {
+            return searchResults;
+        } else {
+            const searchResults = this.getAll().filter(this.searchFunction.bind(this, searchParam));
+            const resultIds = searchResults.map(this.getId.bind(this));
+            this.searchResults.set(JSON.stringify(searchParam), resultIds);
+            this.trigger(triggerEntityKey);
+            return resultIds;
         }
     }
 

@@ -26,7 +26,9 @@ import React from 'react';
 import {createDynamicLoadingStore, createEntityStore, createPersistentEntityStore, EntityStore} from '../';
 import {ComponentBase} from 'resub';
 import {mount} from 'enzyme';
-import {of} from 'rxjs';
+import {Observable, of} from 'rxjs';
+import {delay} from 'rxjs/operators';
+import {wait} from './testUtil';
 
 interface TestObject {
     key: number;
@@ -48,7 +50,10 @@ class TestComponent<searchType = string> extends ComponentBase<
     TestParameters<TestObject, searchType>,
     TestState<TestObject>
 > {
+    public buildStateInvokeCount = 0;
+
     protected _buildState(props: TestParameters<TestObject, searchType>): Partial<TestState<TestObject>> | undefined {
+        this.buildStateInvokeCount++;
         if (props.search) {
             return {
                 testObject: props.testStore.search(props.search),
@@ -209,7 +214,7 @@ describe('EntityStore', function () {
         expect(testComponent2.contains('1')).toEqual(true);
     });
 
-    it('DynamicLoadingStore should trigger update in component subscribed to all on change of entity', function () {
+    it('EntityStore should trigger update in component subscribed to all on change of entity', function () {
         const testStore = createEntityStore<TestObject>({
             selectIdFunction: (entity) => entity.key,
         });
@@ -229,6 +234,78 @@ describe('EntityStore', function () {
 
         testComponent1.update();
         expect(testComponent1.html()).toEqual('01');
+    });
+
+    function getFilteredTestEntitiesDelayed(searchParameter: number, delayMs: number): Observable<Array<number>> {
+        return of(testEntities.filter((e) => e.key === searchParameter).map((entity) => entity.key)).pipe(
+            delay(delayMs)
+        );
+    }
+
+    it('DynamicLoadingStore should trigger loadSearched only once per searchParameter', async function () {
+        let loadFunctionCallCounter = 0;
+        const testStore = createDynamicLoadingStore<TestObject, number, number>({
+            selectIdFunction: (entity) => entity.key,
+            loadFunction: (id) => of(testEntities.filter((e) => e.key === id)[0]),
+            searchFunction: (searchParameter, entity) => entity.key === searchParameter,
+            searchLoadFunction: (searchParameter) => {
+                loadFunctionCallCounter++;
+                return getFilteredTestEntitiesDelayed(searchParameter, 0);
+            },
+        });
+
+        const testComponent1 = mount(
+            <TestComponent uniqueId={new Date().getTime() + '1'} testStore={testStore} search={1} />
+        );
+
+        testComponent1.update();
+
+        expect(loadFunctionCallCounter).toEqual(1);
+    });
+
+    it('DynamicLoadingStore should trigger update on search', async function () {
+        const testStore = createDynamicLoadingStore<TestObject, number, number>({
+            selectIdFunction: (entity) => entity.key,
+            loadFunction: (id) => {
+                return of(testEntities.filter((e) => e.key === id)[0]).pipe(delay(10));
+            },
+            searchFunction: (searchParameter, entity) => entity.key === searchParameter,
+            searchLoadFunction: (searchParameter) => {
+                return getFilteredTestEntitiesDelayed(searchParameter, 10);
+            },
+        });
+
+        const testComponent1 = mount(
+            <TestComponent uniqueId={new Date().getTime() + '1'} testStore={testStore} search={1} />
+        );
+
+        const testComponent2 = mount(
+            <TestComponent uniqueId={new Date().getTime() + '2'} testStore={testStore} search={2} />
+        );
+
+        await wait(100);
+        testComponent1.update();
+        testComponent2.update();
+
+        expect(testComponent1.contains('1')).toEqual(true);
+        expect(testComponent2.contains('2')).toEqual(true);
+
+        testStore.setOne({key: 1, value: 2});
+        testStore.setEntities([...testStore.getAll().filter((e) => e.key !== 1), {key: 1, value: 2}]);
+
+        testComponent1.update();
+        testComponent2.update();
+
+        expect(testComponent1.contains('1')).toEqual(false);
+        expect(testComponent1.contains('2')).toEqual(true);
+
+        testStore.setOne({key: 2, value: 1});
+        testStore.setEntities([...testStore.getAll().filter((e) => e.key !== 2), {key: 2, value: 1}]);
+
+        testComponent1.update();
+        testComponent2.update();
+        expect(testComponent1.contains('2')).toEqual(true);
+        expect(testComponent2.contains('1')).toEqual(true);
     });
 
     it('PersistentEntityStore should trigger update in component on change of entity', function () {

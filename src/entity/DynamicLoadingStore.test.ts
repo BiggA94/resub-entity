@@ -24,7 +24,6 @@ SOFTWARE.
 
 import {createDynamicLoadingStore} from './DynamicLoadingStore';
 import {forkJoin, of} from 'rxjs';
-import {delay} from 'rxjs/operators';
 import {EntityHandler} from './EntityHandler';
 
 interface TestClass {
@@ -81,7 +80,6 @@ describe('DynamicLoadingStore', function () {
         store.invalidateCache(1);
         // now load should be called on get
         store.getOne(1);
-        await delay(100);
         expect(loadSpy.mock.calls).toHaveLength(2);
     });
 
@@ -137,11 +135,6 @@ describe('DynamicLoadingStore', function () {
             expect(store.search(2)).toEqual(testValues.get(2));
         });
 
-        // first time, values are loading asynchronously
-        expect(store.search(3)).toHaveLength(0);
-        // second time, the id's should be present, but ot the values
-        expect(store.search(3)).toHaveLength(0);
-        // third time, the values should be loaded
         expect(store.search(3)).toHaveLength(1);
 
         loadingOffset = 2;

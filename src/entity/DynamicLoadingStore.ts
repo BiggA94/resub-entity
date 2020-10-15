@@ -25,7 +25,7 @@ SOFTWARE.
 import {SelectEntityStore, SelectEntityStoreProperties} from './SelectEntityStore';
 import {idType} from './EntityHandler';
 import {Observable, Subject} from 'rxjs';
-import {autoSubscribeWithKey} from 'resub';
+import {autoSubscribeWithKey, StoreBase} from 'resub';
 import {triggerEntityKey} from './EntityStore';
 import {tap} from 'rxjs/operators';
 
@@ -46,8 +46,11 @@ export class DynamicLoadingStore<entity, id extends idType = number, searchType 
     private readonly loadFunction: (id: id) => Observable<entity>;
     private readonly searchLoadFunction?: (searchParams: searchType) => Observable<ReadonlyArray<id>>;
     private currentlyLoading: Set<id> = new Set<id>();
+    private currentlyLoadingSearched: Set<searchType> = new Set<searchType>();
     private lastLoadedAt: Map<id, Date> = new Map<id, Date>();
+    private lastSearchedAt: Map<string, Date> = new Map<string, Date>();
     private readonly hashTimeSec: number;
+    private readonly searchCacheTimeSec: number;
     private readonly dynamicCacheTimeFunction?: (entity: entity) => Date | undefined;
     private readonly dynamicValidUntil?: Map<id, Date>;
 
@@ -56,6 +59,7 @@ export class DynamicLoadingStore<entity, id extends idType = number, searchType 
         this.loadFunction = props.loadFunction;
         this.searchLoadFunction = props.searchLoadFunction;
         this.hashTimeSec = props.hashTimeSec || DEFAULT_CACHE_INVALIDATION_TIME;
+        this.searchCacheTimeSec = DEFAULT_CACHE_INVALIDATION_TIME;
         this.dynamicCacheTimeFunction = props.dynamicValidUntilFunction;
         if (props.dynamicValidUntilFunction) {
             this.dynamicValidUntil = new Map<id, Date>();
@@ -179,22 +183,51 @@ export class DynamicLoadingStore<entity, id extends idType = number, searchType 
      * forceLoad background loading of search results
      * @param searchParam
      */
+    @autoSubscribeWithKey(triggerEntityKey)
     loadSearched(searchParam: searchType): void {
         if (this.searchLoadFunction) {
-            this.searchLoadFunction(searchParam).subscribe((resultIds) => {
-                this.searchResults.set(searchParam, resultIds);
-                this.trigger(triggerEntityKey);
-            });
+            if (!this.currentlyLoadingSearched.has(searchParam)) {
+                this.currentlyLoadingSearched.add(searchParam);
+                this.searchLoadFunction(searchParam).subscribe((resultIds) => {
+                    this.searchResults.set(JSON.stringify(searchParam), resultIds);
+                    this.lastSearchedAt.set(JSON.stringify(searchParam), new Date());
+                    StoreBase.pushTriggerBlock();
+                    resultIds.map(this.getOne.bind(this));
+                    this.trigger(triggerEntityKey);
+                    StoreBase.popTriggerBlock();
+                    this.currentlyLoadingSearched.delete(searchParam);
+                });
+            }
         }
     }
 
+    protected searchCacheIsInvalid(
+        cachedTimestamp: Date | undefined,
+        currentTimestamp: Date,
+        searchParam: searchType
+    ): boolean {
+        if (!cachedTimestamp) {
+            // only allow one loading at a time
+            return !this.currentlyLoadingSearched.has(searchParam);
+        }
+
+        return cachedTimestamp.getTime() + this.hashTimeSec * 1000 <= currentTimestamp.getTime();
+    }
+
     search(searchParam: searchType): ReadonlyArray<entity> {
-        const searchResult = super.search(searchParam);
-        if (searchResult.length == 0) {
-            // only load results, if they can't be found via internal search
+        const lastSearched = this.lastSearchedAt.get(JSON.stringify(searchParam));
+        if (this.searchCacheIsInvalid(lastSearched, new Date(Date.now()), searchParam)) {
             this.loadSearched(searchParam);
         }
-        return searchResult;
+        return super.search(searchParam);
+    }
+
+    searchIds(searchParam: searchType): ReadonlyArray<id> {
+        const lastSearched = this.lastSearchedAt.get(JSON.stringify(searchParam));
+        if (this.searchCacheIsInvalid(lastSearched, new Date(Date.now()), searchParam)) {
+            this.loadSearched(searchParam);
+        }
+        return super.searchIds(searchParam);
     }
 }
 
