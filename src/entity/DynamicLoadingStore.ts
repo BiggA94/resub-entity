@@ -183,7 +183,6 @@ export class DynamicLoadingStore<entity, id extends idType = number, searchType 
      * forceLoad background loading of search results
      * @param searchParam
      */
-    @autoSubscribeWithKey(triggerEntityKey)
     loadSearched(searchParam: searchType): void {
         if (this.searchLoadFunction) {
             if (!this.currentlyLoadingSearched.has(searchParam)) {
