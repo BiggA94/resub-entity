@@ -76,7 +76,7 @@ export class DynamicLoadingStore<entity, id extends idType = number, searchType 
         return value;
     }
 
-    protected loadOneIfInvalidCache(id: id) {
+    protected loadOneIfInvalidCache(id: id): void {
         const currentTimestamp = new Date(Date.now());
         const cachedTimestamp = this.lastLoadedAt.get(id);
         if (this.cacheIsInvalid(cachedTimestamp, currentTimestamp, id)) {
