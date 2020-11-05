@@ -66,14 +66,14 @@ class SuspenseWrapper<entity> {
 export class SuspenseStore<entity, id extends idType = number> extends DynamicLoadingStore<entity, id> {
     private loadingObservables: Map<id, Observable<entity>> = new Map<id, Observable<entity>>();
 
-    // ignore this for now, decide wether to use same method, or other method for suspense api...
+    // ignore this for now, decide whether to use same method, or other method for suspense api...
     // eslint-disable-next-line
     // @ts-ignore
     getOne(id: id): SuspenseWrapper<entity> {
         let value: entity | undefined | Observable<entity> = super.getOne(id);
         const currentTimestamp = new Date(Date.now());
         const cachedTimestamp = this.getLastLoadedTime(id);
-        if (this.cacheIsInvalid(value as entity | undefined, cachedTimestamp, currentTimestamp, id)) {
+        if (this.cacheIsInvalid(cachedTimestamp, currentTimestamp, id)) {
             value = this.loadOne(id, currentTimestamp);
         } else {
             // if already loading

@@ -137,24 +137,12 @@ export class EntityStore<entity, id extends idType = number, searchType = string
     // todo: needs proper subscriptions (is this possible?)
     @autoSubscribeWithKey(triggerEntityKey)
     public search(searchParam: searchType): ReadonlyArray<entity> {
-        if (!this.searchFunction) {
-            throw new Error('no search function specified');
-        }
-        const searchResults = this.searchResults.get(JSON.stringify(searchParam));
-        if (searchResults) {
-            return (
-                searchResults
-                    .map(this.getOne.bind(this))
-                    // no !entity, or else we would not allow 0 or null as return value
-                    .filter((entity) => entity !== undefined) as ReadonlyArray<entity>
-            );
-        } else {
-            const searchResults = this.getAll().filter(this.searchFunction.bind(this, searchParam));
-            const resultIds = searchResults.map(this.getId.bind(this));
-            this.searchResults.set(JSON.stringify(searchParam), resultIds);
-            this.trigger(triggerEntityKey);
-            return searchResults;
-        }
+        return (
+            this.searchIds(searchParam)
+                .map(this.getOne.bind(this))
+                // no !entity, or else we would not allow 0 or null as return value
+                .filter((entity) => entity !== undefined) as ReadonlyArray<entity>
+        );
     }
 
     @autoSubscribeWithKey(triggerEntityKey)

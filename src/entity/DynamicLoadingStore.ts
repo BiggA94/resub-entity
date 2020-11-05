@@ -70,10 +70,18 @@ export class DynamicLoadingStore<entity, id extends idType = number, searchType 
         const value = super.getOne(id);
         const currentTimestamp = new Date(Date.now());
         const cachedTimestamp = this.lastLoadedAt.get(id);
-        if (this.cacheIsInvalid(value, cachedTimestamp, currentTimestamp, id)) {
+        if (this.cacheIsInvalid(cachedTimestamp, currentTimestamp, id)) {
             this.loadOne(id, currentTimestamp);
         }
         return value;
+    }
+
+    protected loadOneIfInvalidCache(id: id) {
+        const currentTimestamp = new Date(Date.now());
+        const cachedTimestamp = this.lastLoadedAt.get(id);
+        if (this.cacheIsInvalid(cachedTimestamp, currentTimestamp, id)) {
+            this.loadOne(id, currentTimestamp);
+        }
     }
 
     protected getLastLoadedTime(id: id): Date | undefined {
@@ -84,13 +92,8 @@ export class DynamicLoadingStore<entity, id extends idType = number, searchType 
         return this.currentlyLoading.has(id);
     }
 
-    protected cacheIsInvalid(
-        value: Readonly<entity> | undefined,
-        cachedTimestamp: Date | undefined,
-        currentTimestamp: Date,
-        id: id
-    ): boolean {
-        if (!value || !cachedTimestamp) {
+    protected cacheIsInvalid(cachedTimestamp: Date | undefined, currentTimestamp: Date, id: id): boolean {
+        if (!cachedTimestamp) {
             // only allow one loading at a time
             return !this.currentlyLoading.has(id);
         }
@@ -191,7 +194,7 @@ export class DynamicLoadingStore<entity, id extends idType = number, searchType 
                     this.searchResults.set(JSON.stringify(searchParam), resultIds);
                     this.lastSearchedAt.set(JSON.stringify(searchParam), new Date());
                     StoreBase.pushTriggerBlock();
-                    resultIds.map(this.getOne.bind(this));
+                    resultIds.map(this.loadOneIfInvalidCache.bind(this));
                     this.trigger(triggerEntityKey);
                     StoreBase.popTriggerBlock();
                     this.currentlyLoadingSearched.delete(searchParam);
