@@ -154,7 +154,7 @@ export class EntityStore<entity, id extends idType = number, searchType = string
         if (searchResults) {
             return searchResults;
         } else {
-            const searchResults = this.getAll().filter(this.searchFunction.bind(this, searchParam));
+            const searchResults = this.entityHandler.getAll().filter(this.searchFunction.bind(this, searchParam));
             const resultIds = searchResults.map(this.getId.bind(this));
             this.searchResults.set(JSON.stringify(searchParam), resultIds);
             this.trigger(triggerEntityKey);
