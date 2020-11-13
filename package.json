@@ -1,6 +1,6 @@
 {
   "name": "resub-entity",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "This project eases the use of ReSub by providing a simple function to create a Store for an entity",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
