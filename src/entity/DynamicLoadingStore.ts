@@ -46,7 +46,7 @@ export class DynamicLoadingStore<entity, id extends idType = number, searchType 
     private readonly loadFunction: (id: id) => Observable<entity>;
     private readonly searchLoadFunction?: (searchParams: searchType) => Observable<ReadonlyArray<id>>;
     private currentlyLoading: Set<id> = new Set<id>();
-    private currentlyLoadingSearched: Set<searchType> = new Set<searchType>();
+    private currentlyLoadingSearched: Set<string> = new Set<string>();
     private lastLoadedAt: Map<id, Date> = new Map<id, Date>();
     private lastSearchedAt: Map<string, Date> = new Map<string, Date>();
     private readonly hashTimeSec: number;
@@ -168,10 +168,19 @@ export class DynamicLoadingStore<entity, id extends idType = number, searchType 
     invalidateCache(ref?: id): void {
         if (!ref) {
             this.lastLoadedAt.clear();
+            this.lastSearchedAt.clear();
             this.dynamicValidUntil?.clear();
         } else {
             this.lastLoadedAt.delete(ref);
             this.dynamicValidUntil?.delete(ref);
+        }
+    }
+
+    invalidateSearch(search?: searchType): void {
+        if (!search) {
+            this.lastSearchedAt.clear();
+        } else {
+            this.lastSearchedAt.delete(JSON.stringify(search));
         }
     }
 
@@ -188,8 +197,8 @@ export class DynamicLoadingStore<entity, id extends idType = number, searchType 
      */
     loadSearched(searchParam: searchType): void {
         if (this.searchLoadFunction) {
-            if (!this.currentlyLoadingSearched.has(searchParam)) {
-                this.currentlyLoadingSearched.add(searchParam);
+            if (!this.currentlyLoadingSearched.has(JSON.stringify(searchParam))) {
+                this.currentlyLoadingSearched.add(JSON.stringify(searchParam));
                 this.searchLoadFunction(searchParam).subscribe((resultIds) => {
                     this.searchResults.set(JSON.stringify(searchParam), resultIds);
                     this.lastSearchedAt.set(JSON.stringify(searchParam), new Date());
@@ -197,7 +206,7 @@ export class DynamicLoadingStore<entity, id extends idType = number, searchType 
                     resultIds.map(this.loadOneIfInvalidCache.bind(this));
                     this.trigger(triggerEntityKey);
                     StoreBase.popTriggerBlock();
-                    this.currentlyLoadingSearched.delete(searchParam);
+                    this.currentlyLoadingSearched.delete(JSON.stringify(searchParam));
                 });
             }
         }
@@ -210,7 +219,7 @@ export class DynamicLoadingStore<entity, id extends idType = number, searchType 
     ): boolean {
         if (!cachedTimestamp) {
             // only allow one loading at a time
-            return !this.currentlyLoadingSearched.has(searchParam);
+            return !this.currentlyLoadingSearched.has(JSON.stringify(searchParam));
         }
 
         return cachedTimestamp.getTime() + this.hashTimeSec * 1000 <= currentTimestamp.getTime();
