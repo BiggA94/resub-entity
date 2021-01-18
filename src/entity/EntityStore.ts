@@ -137,12 +137,12 @@ export class EntityStore<entity, id extends idType = number, searchType = string
     // todo: needs proper subscriptions (is this possible?)
     @autoSubscribeWithKey(triggerEntityKey)
     public search(searchParam: searchType): ReadonlyArray<entity> {
-        return (
-            this.searchIds(searchParam)
-                .map(this.getOne.bind(this))
-                // no !entity, or else we would not allow 0 or null as return value
-                .filter((entity) => entity !== undefined) as ReadonlyArray<entity>
-        );
+        const entities = this.searchIds(searchParam)
+            .map(this.getOne.bind(this))
+            // no !entity, or else we would not allow 0 or null as return value
+            .filter((entity) => entity !== undefined) as ReadonlyArray<entity>;
+        const sortedEntities = entities.slice().sort(this.entityHandler.sortFunction);
+        return sortedEntities;
     }
 
     @autoSubscribeWithKey(triggerEntityKey)

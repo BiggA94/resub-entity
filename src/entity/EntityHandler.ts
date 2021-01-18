@@ -35,7 +35,7 @@ export class EntityHandler<entity, id extends idType = number> {
     private ids: Set<id> = new Set();
 
     private readonly selectIdFunction: selectIdFunctionType<entity, id>;
-    private readonly sortFunction: sortFunctionType<entity>;
+    public readonly sortFunction: sortFunctionType<entity>;
 
     constructor(selectIdFunction: selectIdFunctionType<entity, id>, sortFunction?: sortFunctionType<entity>) {
         this.selectIdFunction = selectIdFunction;
