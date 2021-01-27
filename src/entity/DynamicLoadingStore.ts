@@ -204,10 +204,14 @@ export class DynamicLoadingStore<entity, id extends idType = number, searchType 
                     this.searchResults.set(JSON.stringify(searchParam), resultIds);
                     this.lastSearchedAt.set(JSON.stringify(searchParam), new Date());
                     StoreBase.pushTriggerBlock();
-                    const loadObservables: Array<Observable<entity|null>> = resultIds.map(this.loadOneIfInvalidCache.bind(this));
+                    const loadObservables: Array<Observable<entity | null>> = resultIds.map(
+                        this.loadOneIfInvalidCache.bind(this)
+                    );
                     forkJoin(loadObservables).subscribe(() => {
                         // now we need to resort, after all entities have been loaded
-                        const sortedIds = this.entityHandler.get(resultIds).map(entity => this.entityHandler.getId(entity));
+                        const sortedIds = this.entityHandler
+                            .get(resultIds)
+                            .map((entity) => this.entityHandler.getId(entity));
                         this.searchResults.set(JSON.stringify(searchParam), sortedIds);
                         this.trigger(triggerEntityKey);
                     });

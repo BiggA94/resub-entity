@@ -454,7 +454,13 @@ describe('EntityStore', function () {
             sortFunction: (entity1, entity2) => entity1.key - entity2.key,
         });
 
-        store.setAll([{key: 1, value: 1},{key: 2, value: 2},{key: 3, value: 3},{key: 4, value: 4},{key: 5, value: 5}]);
+        store.setAll([
+            {key: 1, value: 1},
+            {key: 2, value: 2},
+            {key: 3, value: 3},
+            {key: 4, value: 4},
+            {key: 5, value: 5},
+        ]);
 
         const testObjects = store.search([1, 2, 5, 4, 3]);
         expect(testObjects).toHaveLength(5);

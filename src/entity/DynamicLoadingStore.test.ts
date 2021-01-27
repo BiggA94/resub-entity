@@ -161,7 +161,7 @@ describe('DynamicLoadingStore', function () {
             sortFunction: (entity1, entity2) => entity1.id - entity2.id,
         });
 
-        let testObjects = store.search([1, 2, 5, 4, 3]);
+        const testObjects = store.search([1, 2, 5, 4, 3]);
         expect(testObjects).toHaveLength(5);
         expect(testObjects).toStrictEqual([
             {id: 1, value: 'one'},
