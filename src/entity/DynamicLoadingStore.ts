@@ -24,7 +24,7 @@ SOFTWARE.
 
 import {SelectEntityStore, SelectEntityStoreProperties} from './SelectEntityStore';
 import {idType} from './EntityHandler';
-import {Observable, Subject} from 'rxjs';
+import {forkJoin, Observable, of, ReplaySubject} from 'rxjs';
 import {autoSubscribeWithKey, StoreBase} from 'resub';
 import {triggerEntityKey} from './EntityStore';
 import {tap} from 'rxjs/operators';
@@ -76,12 +76,13 @@ export class DynamicLoadingStore<entity, id extends idType = number, searchType 
         return value;
     }
 
-    protected loadOneIfInvalidCache(id: id): void {
+    protected loadOneIfInvalidCache(id: id): Observable<entity | null> {
         const currentTimestamp = new Date(Date.now());
         const cachedTimestamp = this.lastLoadedAt.get(id);
         if (this.cacheIsInvalid(cachedTimestamp, currentTimestamp, id)) {
-            this.loadOne(id, currentTimestamp);
+            return this.loadOne(id, currentTimestamp);
         }
+        return of(null);
     }
 
     protected getLastLoadedTime(id: id): Date | undefined {
@@ -142,7 +143,7 @@ export class DynamicLoadingStore<entity, id extends idType = number, searchType 
             );
         }
 
-        const result = new Subject<entity>();
+        const result = new ReplaySubject<entity>(1);
 
         loadResult.subscribe(
             (e: entity | undefined) => {
@@ -203,7 +204,17 @@ export class DynamicLoadingStore<entity, id extends idType = number, searchType 
                     this.searchResults.set(JSON.stringify(searchParam), resultIds);
                     this.lastSearchedAt.set(JSON.stringify(searchParam), new Date());
                     StoreBase.pushTriggerBlock();
-                    resultIds.map(this.loadOneIfInvalidCache.bind(this));
+                    const loadObservables: Array<Observable<entity | null>> = resultIds.map(
+                        this.loadOneIfInvalidCache.bind(this)
+                    );
+                    forkJoin(loadObservables).subscribe(() => {
+                        // now we need to resort, after all entities have been loaded
+                        const sortedIds = this.entityHandler
+                            .get(resultIds)
+                            .map((entity) => this.entityHandler.getId(entity));
+                        this.searchResults.set(JSON.stringify(searchParam), sortedIds);
+                        this.trigger(triggerEntityKey);
+                    });
                     this.trigger(triggerEntityKey);
                     StoreBase.popTriggerBlock();
                     this.currentlyLoadingSearched.delete(JSON.stringify(searchParam));

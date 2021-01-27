@@ -151,4 +151,24 @@ describe('DynamicLoadingStore', function () {
 
         forkJoin([first, second].map((p) => p.toPromise())).subscribe(() => done());
     });
+
+    it('should load values in a sorted manner', function () {
+        const store = createDynamicLoadingStore<TestClass, number, number[]>({
+            selectIdFunction: (entity) => entity.id,
+            loadFunction: (id) => of(testValues.get(id) || {id: id, value: 'id:' + id}),
+            searchFunction: () => true,
+            searchLoadFunction: (searchParams) => of(searchParams),
+            sortFunction: (entity1, entity2) => entity1.id - entity2.id,
+        });
+
+        const testObjects = store.search([1, 2, 5, 4, 3]);
+        expect(testObjects).toHaveLength(5);
+        expect(testObjects).toStrictEqual([
+            {id: 1, value: 'one'},
+            {id: 2, value: 'two'},
+            {id: 3, value: 'three'},
+            {id: 4, value: 'four'},
+            {id: 5, value: 'five'},
+        ]);
+    });
 });

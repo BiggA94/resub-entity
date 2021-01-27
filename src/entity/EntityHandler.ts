@@ -78,13 +78,16 @@ export class EntityHandler<entity, id extends idType = number> {
      * @param ids
      */
     public get(ids: idOrIds): ReadonlyArray<entity> {
-        let entities: Array<entity | undefined>;
         if (Array.isArray(ids)) {
-            entities = Array.from(ids).map(this.getOne.bind(this));
+            return (Array.from(ids)
+                .map(this.getOne.bind(this))
+                .filter((entity) => entity !== undefined) as Array<entity>).sort(this.sortFunction);
         } else {
-            entities = [this.getOne(ids as id)];
+            if (!this.hasOne(ids as id)) {
+                return [];
+            }
+            return [this.getOne(ids as id) as entity];
         }
-        return entities.filter((entity) => entity !== undefined) as ReadonlyArray<entity>;
     }
 
     /**
