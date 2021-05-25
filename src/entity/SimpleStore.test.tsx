@@ -22,9 +22,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-import React from 'react';
+import React, { ReactElement } from "react";
 import {AutoSubscribeStore, autoSubscribeWithKey, ComponentBase, formCompoundKey, key, StoreBase} from 'resub';
-import {mount} from 'enzyme';
+import { render, screen } from "@testing-library/react";
+import '@testing-library/jest-dom/extend-expect';
 
 interface TestParameters {
     uniqueId: string;
@@ -37,9 +38,9 @@ interface TestState {
 }
 
 class TestComponent extends ComponentBase<TestParameters, TestState> {
-    render(): number | null {
+    render(): ReactElement | null {
         if (!this.state.testObject) return null;
-        return this.state.testObject;
+        return (<h1 data-testid={this.props.uniqueId}>{this.state.testObject}</h1>);
     }
 
     protected _buildState(props: TestParameters): Partial<TestState> | undefined {
@@ -77,38 +78,34 @@ describe('SimpleStore', () => {
     function testSimpleStore() {
         const testStore1 = new SimpleStore();
         testStore1.setVal(1);
-        const testComponent = mount(
-            <TestComponent propertyKey={'value'} testStore={testStore1} uniqueId={new Date().getTime() + '1'} />
+        const testComponent = render(
+            <TestComponent propertyKey={'value'} testStore={testStore1} uniqueId={'1'}/>
         );
 
         const testStore2 = new SimpleStore();
         testStore2.setVal(2);
 
-        const testComponent2 = mount(
-            <TestComponent propertyKey={'value'} testStore={testStore2} uniqueId={new Date().getTime() + '2'} />
+        const testComponent2 = render(
+            <TestComponent propertyKey={'value'} testStore={testStore2} uniqueId={'2'}/>
         );
-        expect(testComponent.contains('1')).toEqual(true);
-        expect(testComponent2.contains('2')).toEqual(true);
+        expect(screen.getByTestId('1')).toHaveTextContent('1');
+        expect(screen.getByTestId('2')).toHaveTextContent('2');
 
         testStore1.setVal(2);
-        testComponent.update();
-        expect(testComponent.contains('2')).toEqual(true);
-        expect(testComponent2.contains('2')).toEqual(true);
+        expect(screen.getByTestId('1')).toHaveTextContent('2');
+        expect(screen.getByTestId('2')).toHaveTextContent('2');
 
         testStore2.setVal(1);
-        testComponent2.update();
-        expect(testComponent.contains('2')).toEqual(true);
-        expect(testComponent2.contains('1')).toEqual(true);
+        expect(screen.getByTestId('1')).toHaveTextContent('2');
+        expect(screen.getByTestId('2')).toHaveTextContent('1');
 
         testStore1.setVal(1);
-        testComponent.update();
-        expect(testComponent.contains('1')).toEqual(true);
-        expect(testComponent2.contains('1')).toEqual(true);
+        expect(screen.getByTestId('1')).toHaveTextContent('1');
+        expect(screen.getByTestId('2')).toHaveTextContent('1');
 
         testStore2.setVal(2);
-        testComponent2.update();
-        expect(testComponent.contains('1')).toEqual(true);
-        expect(testComponent2.contains('2')).toEqual(true);
+        expect(screen.getByTestId('1')).toHaveTextContent('1');
+        expect(screen.getByTestId('2')).toHaveTextContent('2');
     }
 
     describe('should contain the correct values', () => {
