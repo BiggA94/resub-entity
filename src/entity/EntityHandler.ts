@@ -27,8 +27,8 @@ import {defaultSortFunction} from './util';
 export type idType = number | string;
 export type idOrIds = idType | ReadonlyArray<idType>;
 
-export type selectIdFunctionType<entity, id extends idType = number> = (entity: Readonly<entity>) => id;
-export type sortFunctionType<entity> = (entity1: entity, entity2: entity) => number;
+export type selectIdFunctionType<entity, id extends idType = number> = (_entity: Readonly<entity>) => id;
+export type sortFunctionType<entity> = (_entity1: entity, _entity2: entity) => number;
 
 export class EntityHandler<entity, id extends idType = number> {
     private entities: Map<id, entity> = new Map();
@@ -79,9 +79,11 @@ export class EntityHandler<entity, id extends idType = number> {
      */
     public get(ids: idOrIds): ReadonlyArray<entity> {
         if (Array.isArray(ids)) {
-            return (Array.from(ids)
-                .map(this.getOne.bind(this))
-                .filter((entity) => entity !== undefined) as Array<entity>).sort(this.sortFunction);
+            return (
+                Array.from(ids)
+                    .map(this.getOne.bind(this))
+                    .filter((entity) => entity !== undefined) as Array<entity>
+            ).sort(this.sortFunction);
         } else {
             if (!this.hasOne(ids as id)) {
                 return [];

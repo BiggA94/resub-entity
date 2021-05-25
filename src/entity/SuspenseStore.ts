@@ -25,7 +25,7 @@ SOFTWARE.
 // CAREFUL! Highly experimental!
 import {DynamicLoadingStore, DynamicLoadingStoreProperties} from './DynamicLoadingStore';
 import {idType} from './EntityHandler';
-import {Observable} from 'rxjs';
+import {firstValueFrom, Observable} from 'rxjs';
 import {tap} from 'rxjs/operators';
 
 class SuspenseWrapper<entity> {
@@ -46,7 +46,7 @@ class SuspenseWrapper<entity> {
 
     constructor(result: Observable<entity> | entity | undefined) {
         if (result instanceof Observable) {
-            this.subscription = result.toPromise().then(
+            this.subscription = firstValueFrom(result).then(
                 (result) => {
                     this.result = result;
                     this.status = 'success';
