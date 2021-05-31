@@ -3,10 +3,10 @@
     "@parcel/config-default"
   ],
   "validators": {
-    "*.{js,jsx,ts,tsx}": ["@parcel/validator-eslint"]
+    "*.{js,jsx,ts,tsx}": ["@parcel/validator-eslint"],
+    "*.{ts,tsx}": ["@parcel/validator-typescript"]
   },
   "transformers": {
-    "types:*.{ts,tsx}": ["@parcel/transformer-typescript-types"],
     "*.{ts,tsx}": [
       "@parcel/transformer-typescript-tsc"
     ]

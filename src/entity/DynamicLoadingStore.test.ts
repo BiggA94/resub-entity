@@ -171,4 +171,43 @@ describe('DynamicLoadingStore', function () {
             {id: 5, value: 'five'},
         ]);
     });
+
+    it('should load values even without searchFunction given', function (done) {
+        let loadingOffset = 0;
+        const store = createDynamicLoadingStore<TestClass, number, number>({
+            selectIdFunction: (entity) => entity.id,
+            loadFunction: (id) => of(testValues.get(id) || {id: id, value: 'id:' + id}),
+            searchLoadFunction: (searchParams) => of(Array.of(searchParams + loadingOffset)),
+        });
+
+        const first = store.loadOne(1);
+        first.subscribe((value) => {
+            expect(value).toEqual(testValues.get(1));
+            expect(store.getAll()).toHaveLength(1);
+
+            expect(store.search(1)).toEqual(testValues.get(1));
+        });
+        const second = store.loadOne(2);
+        second.subscribe((value) => {
+            expect(value).toEqual(testValues.get(2));
+            expect(store.getAll()).toHaveLength(2);
+            expect(store.search(2)).toEqual(testValues.get(2));
+        });
+
+        expect(store.search(3)).toHaveLength(1);
+
+        loadingOffset = 2;
+
+        expect(store.search(3)).toContainEqual(testValues.get(3));
+
+        // force load of new search items
+        // here, ids are loaded
+        store.loadSearched(3);
+        // now, entities are loading
+        store.search(3);
+        // and now the entities are loaded
+        expect(store.search(3)).toContainEqual(testValues.get(5));
+
+        forkJoin([first, second].map((p) => p.toPromise())).subscribe(() => done());
+    });
 });

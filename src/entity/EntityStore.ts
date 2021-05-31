@@ -147,13 +147,14 @@ export class EntityStore<entity, id extends idType = number, searchType = string
 
     @autoSubscribeWithKey(triggerEntityKey)
     public searchIds(searchParam: searchType): ReadonlyArray<id> {
-        if (!this.searchFunction) {
-            throw new Error('no search function specified');
-        }
         const searchResults = this.searchResults.get(JSON.stringify(searchParam));
         if (searchResults) {
             return searchResults;
         } else {
+            if (!this.searchFunction) {
+                console.warn('no search function specified');
+                return [];
+            }
             const searchResults = this.entityHandler.getAll().filter(this.searchFunction.bind(this, searchParam));
             const resultIds = searchResults.map(this.getId.bind(this));
             this.searchResults.set(JSON.stringify(searchParam), resultIds);

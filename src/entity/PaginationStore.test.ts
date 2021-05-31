@@ -42,7 +42,7 @@ type TestClass = {
 };
 
 describe('PaginationStore', () => {
-    it('should return values with correct indices', async (done) => {
+    it('should return values with correct indices', (done) => {
         const testStore = createPaginationStore<TestClass>({
             loadFunction: (id) => load(id),
             paginatedLoadFunction: (parameters) => loadPaginated(parameters.offset, parameters.limit),

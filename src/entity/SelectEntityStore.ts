@@ -65,11 +65,8 @@ export class SelectEntityStore<entity, id extends idType = number, searchType = 
     }
 }
 
-export type SelectEntityStoreProperties<
-    entity,
-    id extends idType = number,
-    searchType = string
-> = EntityStoreProperties<entity, id, searchType>;
+export type SelectEntityStoreProperties<entity, id extends idType = number, searchType = string> =
+    EntityStoreProperties<entity, id, searchType>;
 
 export function createSelectEntityStore<entity, id extends idType = number, searchType = string>(
     props: SelectEntityStoreProperties<entity, id, searchType>

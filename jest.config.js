@@ -1,5 +1,10 @@
+/**
+ * @jest-environment jsdom
+ */
+
 module.exports = {
     // preset: 'ts-jest',
+    testEnvironment: 'jsdom',
     rootDir: '.',
     moduleFileExtensions: [
         "ts",
