@@ -125,7 +125,7 @@ export class EntityStore<entity, id extends idType = number, searchType = string
         return removedId;
     }
 
-    public removeOneById(id: id): entity | undefined {
+    public removeOneById(id: Readonly<id>): entity | undefined {
         const removedEntity = this.entityHandler.removeOneById(id);
         if (removedEntity) {
             this.trigger([this.getTriggerForId(id), triggerEntityKey]);
