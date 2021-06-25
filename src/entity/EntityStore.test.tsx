@@ -263,6 +263,38 @@ describe('EntityStore', function () {
         expect(loadFunctionCallCounter).toEqual(1);
     });
 
+    it('should handle search keys deterministacally', function () {
+        type searchObject = {
+            key1: number;
+            key2: string;
+            key3: string;
+        };
+        let loadFunctionCallCounter = 0;
+        const testStore = createDynamicLoadingStore<TestObject, number, searchObject>({
+            selectIdFunction: (entity) => entity.key,
+            loadFunction: (id) => of(testEntities.filter((e) => e.key === id)[0]),
+            searchFunction: (searchParameter, entity) => entity.key === searchParameter.key1,
+            searchLoadFunction: (searchParameter) => {
+                loadFunctionCallCounter++;
+                return getFilteredTestEntitiesDelayed(searchParameter.key1, 0);
+            },
+        });
+
+        testStore.searchIds({
+            key1: 1,
+            key2: 'test',
+            key3: 'value',
+        });
+
+        testStore.searchIds({
+            key3: 'value',
+            key1: 1,
+            key2: 'test',
+        });
+
+        expect(loadFunctionCallCounter).toEqual(1);
+    });
+
     it('DynamicLoadingStore should trigger update on search', async function () {
         const testStore = createDynamicLoadingStore<TestObject, number, number>({
             selectIdFunction: (entity) => entity.key,

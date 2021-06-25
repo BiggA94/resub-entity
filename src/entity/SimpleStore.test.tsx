@@ -78,12 +78,12 @@ describe('SimpleStore', () => {
     function testSimpleStore() {
         const testStore1 = new SimpleStore();
         testStore1.setVal(1);
-        const testComponent = render(<TestComponent propertyKey={'value'} testStore={testStore1} uniqueId={'1'} />);
+        render(<TestComponent propertyKey={'value'} testStore={testStore1} uniqueId={'1'} />);
 
         const testStore2 = new SimpleStore();
         testStore2.setVal(2);
 
-        const testComponent2 = render(<TestComponent propertyKey={'value'} testStore={testStore2} uniqueId={'2'} />);
+        render(<TestComponent propertyKey={'value'} testStore={testStore2} uniqueId={'2'} />);
         expect(screen.getByTestId('1')).toHaveTextContent('1');
         expect(screen.getByTestId('2')).toHaveTextContent('2');
 

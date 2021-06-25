@@ -28,6 +28,7 @@ import {forkJoin, Observable, of, ReplaySubject} from 'rxjs';
 import {autoSubscribeWithKey, StoreBase} from 'resub';
 import {triggerEntityKey} from './EntityStore';
 import {tap} from 'rxjs/operators';
+import {deterministicStringify} from './util';
 
 /**
  * This is the time in seconds, the cache should be valid for one item.
@@ -181,7 +182,7 @@ export class DynamicLoadingStore<entity, id extends idType = number, searchType 
         if (!search) {
             this.lastSearchedAt.clear();
         } else {
-            this.lastSearchedAt.delete(JSON.stringify(search));
+            this.lastSearchedAt.delete(deterministicStringify(search));
         }
     }
 
@@ -198,11 +199,11 @@ export class DynamicLoadingStore<entity, id extends idType = number, searchType 
      */
     loadSearched(searchParam: searchType): void {
         if (this.searchLoadFunction) {
-            if (!this.currentlyLoadingSearched.has(JSON.stringify(searchParam))) {
-                this.currentlyLoadingSearched.add(JSON.stringify(searchParam));
+            if (!this.currentlyLoadingSearched.has(deterministicStringify(searchParam))) {
+                this.currentlyLoadingSearched.add(deterministicStringify(searchParam));
                 this.searchLoadFunction(searchParam).subscribe((resultIds) => {
-                    this.searchResults.set(JSON.stringify(searchParam), resultIds);
-                    this.lastSearchedAt.set(JSON.stringify(searchParam), new Date());
+                    this.searchResults.set(deterministicStringify(searchParam), resultIds);
+                    this.lastSearchedAt.set(deterministicStringify(searchParam), new Date());
                     StoreBase.pushTriggerBlock();
                     const loadObservables: Array<Observable<entity | null>> = resultIds.map(
                         this.loadOneIfInvalidCache.bind(this)
@@ -212,12 +213,12 @@ export class DynamicLoadingStore<entity, id extends idType = number, searchType 
                         const sortedIds = this.entityHandler
                             .get(resultIds)
                             .map((entity) => this.entityHandler.getId(entity));
-                        this.searchResults.set(JSON.stringify(searchParam), sortedIds);
+                        this.searchResults.set(deterministicStringify(searchParam), sortedIds);
                         this.trigger(triggerEntityKey);
                     });
                     this.trigger(triggerEntityKey);
                     StoreBase.popTriggerBlock();
-                    this.currentlyLoadingSearched.delete(JSON.stringify(searchParam));
+                    this.currentlyLoadingSearched.delete(deterministicStringify(searchParam));
                 });
             }
         }
@@ -230,14 +231,14 @@ export class DynamicLoadingStore<entity, id extends idType = number, searchType 
     ): boolean {
         if (!cachedTimestamp) {
             // only allow one loading at a time
-            return !this.currentlyLoadingSearched.has(JSON.stringify(searchParam));
+            return !this.currentlyLoadingSearched.has(deterministicStringify(searchParam));
         }
 
         return cachedTimestamp.getTime() + this.hashTimeSec * 1000 <= currentTimestamp.getTime();
     }
 
     search(searchParam: searchType): ReadonlyArray<entity> {
-        const lastSearched = this.lastSearchedAt.get(JSON.stringify(searchParam));
+        const lastSearched = this.lastSearchedAt.get(deterministicStringify(searchParam));
         if (this.searchCacheIsInvalid(lastSearched, new Date(Date.now()), searchParam)) {
             this.loadSearched(searchParam);
         }
@@ -245,7 +246,7 @@ export class DynamicLoadingStore<entity, id extends idType = number, searchType 
     }
 
     searchIds(searchParam: searchType): ReadonlyArray<id> {
-        const lastSearched = this.lastSearchedAt.get(JSON.stringify(searchParam));
+        const lastSearched = this.lastSearchedAt.get(deterministicStringify(searchParam));
         if (this.searchCacheIsInvalid(lastSearched, new Date(Date.now()), searchParam)) {
             this.loadSearched(searchParam);
         }
