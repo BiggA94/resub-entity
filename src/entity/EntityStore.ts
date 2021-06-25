@@ -24,6 +24,7 @@ SOFTWARE.
 
 import {EntityHandler, idType, selectIdFunctionType, sortFunctionType} from './EntityHandler';
 import {AutoSubscribeStore, autoSubscribeWithKey, formCompoundKey, key, StoreBase} from 'resub';
+import {deterministicStringify} from './util';
 
 export const triggerEntityKey = '!@ENTITY_TRIGGER@!';
 
@@ -124,7 +125,7 @@ export class EntityStore<entity, id extends idType = number, searchType = string
         return removedId;
     }
 
-    public removeOneById(id: id): entity | undefined {
+    public removeOneById(id: Readonly<id>): entity | undefined {
         const removedEntity = this.entityHandler.removeOneById(id);
         if (removedEntity) {
             this.trigger([this.getTriggerForId(id), triggerEntityKey]);
@@ -147,7 +148,7 @@ export class EntityStore<entity, id extends idType = number, searchType = string
 
     @autoSubscribeWithKey(triggerEntityKey)
     public searchIds(searchParam: searchType): ReadonlyArray<id> {
-        const searchResults = this.searchResults.get(JSON.stringify(searchParam));
+        const searchResults = this.searchResults.get(deterministicStringify(searchParam));
         if (searchResults) {
             return searchResults;
         } else {
@@ -157,7 +158,7 @@ export class EntityStore<entity, id extends idType = number, searchType = string
             }
             const searchResults = this.entityHandler.getAll().filter(this.searchFunction.bind(this, searchParam));
             const resultIds = searchResults.map(this.getId.bind(this));
-            this.searchResults.set(JSON.stringify(searchParam), resultIds);
+            this.searchResults.set(deterministicStringify(searchParam), resultIds);
             this.trigger(triggerEntityKey);
             return resultIds;
         }
