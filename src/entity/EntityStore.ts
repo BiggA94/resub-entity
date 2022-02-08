@@ -27,14 +27,11 @@ import {AutoSubscribeStore, autoSubscribeWithKey, formCompoundKey, key, StoreBas
 import {deterministicStringify} from './util';
 
 export const triggerEntityKey = '!@ENTITY_TRIGGER@!';
-export type SearchFunctionType<entity, id extends idType = number, searchType = string> = (
-    searchParameter: searchType,
-    entity: entity
-) => boolean;
+export type SearchFunctionType<entity, searchType = string> = (searchParameter: searchType, entity: entity) => boolean;
 
 @AutoSubscribeStore
 export class EntityStore<entity, id extends idType = number, searchType = string> extends StoreBase {
-    protected readonly searchFunction?: SearchFunctionType<entity, id, searchType>;
+    protected readonly searchFunction?: SearchFunctionType<entity, searchType>;
     protected entityHandler: EntityHandler<entity, id>;
 
     constructor(props: EntityStoreProperties<entity, id, searchType>) {
@@ -193,7 +190,7 @@ export interface EntityStoreProperties<entity, id extends idType = number, searc
     bypassTriggerBlocks?: boolean;
     selectIdFunction: selectIdFunctionType<entity, id>;
     sortFunction?: sortFunctionType<entity>;
-    searchFunction?: SearchFunctionType<entity, id, searchType>;
+    searchFunction?: SearchFunctionType<entity, searchType>;
 }
 
 export function createEntityStore<entity, id extends idType = number, searchType = string>(
