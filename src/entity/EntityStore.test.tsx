@@ -263,7 +263,7 @@ describe('EntityStore', function () {
         expect(loadFunctionCallCounter).toEqual(1);
     });
 
-    it('should handle search keys deterministacally', function () {
+    it('should handle search keys deterministically', function () {
         type searchObject = {
             key1: number;
             key2: string;
@@ -293,6 +293,50 @@ describe('EntityStore', function () {
         });
 
         expect(loadFunctionCallCounter).toEqual(1);
+    });
+
+    it('should clear search after entities have changed', function () {
+        type searchObject = {
+            key1: number;
+        };
+        const testStore = createEntityStore<TestObject, number, searchObject>({
+            selectIdFunction: (entity) => entity.key,
+            searchFunction: (searchParameter, entity) => entity.key === searchParameter.key1,
+        });
+
+        expect(
+            testStore.searchIds({
+                key1: 1,
+            })
+        ).toHaveLength(0);
+
+        testStore.setOne({key: 1, value: 42});
+
+        expect(
+            testStore.searchIds({
+                key1: 1,
+            })
+        ).toHaveLength(1);
+
+        expect(
+            testStore.search({
+                key1: 1,
+            })
+        ).toEqual([{key: 1, value: 42}]);
+
+        testStore.setOne({key: 1, value: 43});
+
+        expect(
+            testStore.searchIds({
+                key1: 1,
+            })
+        ).toHaveLength(1);
+
+        expect(
+            testStore.search({
+                key1: 1,
+            })
+        ).toEqual([{key: 1, value: 43}]);
     });
 
     it('DynamicLoadingStore should trigger update on search', async function () {
@@ -404,13 +448,15 @@ describe('EntityStore', function () {
             searchFunction: (searchParameter, entity) => entity.value == searchParameter,
         });
         testStore.setAll(testEntities);
+        expect(testStore.search(1)).toHaveLength(1);
+        expect(testStore.search(2)).toHaveLength(1);
 
         const testComponent1 = mount(
             <TestComponent uniqueId={new Date().getTime() + '1'} testStore={testStore} propertyKey={1} search={1} />
         );
 
         const testComponent2 = mount(
-            <TestComponent propertyKey={2} testStore={testStore} uniqueId={new Date().getTime() + '2'} search={2} />
+            <TestComponent uniqueId={new Date().getTime() + '2'} testStore={testStore} propertyKey={2} search={2} />
         );
 
         expect(testComponent1.contains('1')).toEqual(true);
@@ -418,18 +464,24 @@ describe('EntityStore', function () {
 
         testStore.setOne({key: 1, value: 2});
 
+        expect(testStore.search(1)).toHaveLength(0);
+        expect(testStore.search(2)).toHaveLength(2);
+
         testComponent1.update();
         testComponent2.update();
 
         expect(testComponent1.contains('1')).toEqual(false);
-        expect(testComponent1.contains('2')).toEqual(true);
+        expect(testComponent2.contains('2')).toEqual(true);
 
         testStore.setOne({key: 2, value: 1});
 
         testComponent1.update();
         testComponent2.update();
-        expect(testComponent1.contains('2')).toEqual(true);
-        expect(testComponent2.contains('1')).toEqual(true);
+        expect(testComponent1.contains('1')).toEqual(true);
+        expect(testComponent2.contains('2')).toEqual(true);
+
+        expect(testStore.search(1)).toHaveLength(1);
+        expect(testStore.search(2)).toHaveLength(1);
     });
 
     it('should remove entity by id', function () {

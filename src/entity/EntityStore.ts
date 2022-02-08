@@ -27,10 +27,14 @@ import {AutoSubscribeStore, autoSubscribeWithKey, formCompoundKey, key, StoreBas
 import {deterministicStringify} from './util';
 
 export const triggerEntityKey = '!@ENTITY_TRIGGER@!';
+export type SearchFunctionType<entity, id extends idType = number, searchType = string> = (
+    searchParameter: searchType,
+    entity: entity
+) => boolean;
 
 @AutoSubscribeStore
 export class EntityStore<entity, id extends idType = number, searchType = string> extends StoreBase {
-    protected readonly searchFunction?: (searchParameter: searchType, entity: entity) => boolean;
+    protected readonly searchFunction?: SearchFunctionType<entity, id, searchType>;
     protected entityHandler: EntityHandler<entity, id>;
 
     constructor(props: EntityStoreProperties<entity, id, searchType>) {
@@ -49,6 +53,7 @@ export class EntityStore<entity, id extends idType = number, searchType = string
 
     public setOne(entity: entity): id {
         const id = this.entityHandler.add(entity);
+        this.updateSearchResults();
         this.trigger([this.getTriggerForId(id), triggerEntityKey]);
         return id;
     }
@@ -56,6 +61,7 @@ export class EntityStore<entity, id extends idType = number, searchType = string
     public setAll(entities: Array<entity>): ReadonlyArray<id> {
         StoreBase.pushTriggerBlock();
         const ids = entities.map(this.setOne.bind(this));
+        this.updateSearchResults();
         StoreBase.popTriggerBlock();
         return ids;
     }
@@ -79,6 +85,8 @@ export class EntityStore<entity, id extends idType = number, searchType = string
         entities.forEach((entity) =>
             this.trigger(formCompoundKey(String(this.entityHandler.getId(entity)), triggerEntityKey))
         );
+
+        this.updateSearchResults();
 
         this.trigger(triggerEntityKey);
 
@@ -107,6 +115,7 @@ export class EntityStore<entity, id extends idType = number, searchType = string
 
     public clear(): ReadonlyArray<id> {
         const ids = this.entityHandler.clear();
+        this.updateSearchResults();
         this.trigger(triggerEntityKey);
         return ids;
     }
@@ -119,6 +128,7 @@ export class EntityStore<entity, id extends idType = number, searchType = string
 
     public removeOne(entity: entity): id | undefined {
         const removedId = this.entityHandler.removeOne(entity);
+        this.updateSearchResults();
         if (removedId) {
             this.trigger([this.getTriggerForId(removedId), triggerEntityKey]);
         }
@@ -127,6 +137,7 @@ export class EntityStore<entity, id extends idType = number, searchType = string
 
     public removeOneById(id: Readonly<id>): entity | undefined {
         const removedEntity = this.entityHandler.removeOneById(id);
+        this.updateSearchResults();
         if (removedEntity) {
             this.trigger([this.getTriggerForId(id), triggerEntityKey]);
         }
@@ -146,6 +157,10 @@ export class EntityStore<entity, id extends idType = number, searchType = string
         );
     }
 
+    protected updateSearchResults(): void {
+        this.searchResults.clear();
+    }
+
     @autoSubscribeWithKey(triggerEntityKey)
     public searchIds(searchParam: searchType): ReadonlyArray<id> {
         const searchResults = this.searchResults.get(deterministicStringify(searchParam));
@@ -153,7 +168,6 @@ export class EntityStore<entity, id extends idType = number, searchType = string
             return searchResults;
         } else {
             if (!this.searchFunction) {
-                console.warn('no search function specified');
                 return [];
             }
             const searchResults = this.entityHandler.getAll().filter(this.searchFunction.bind(this, searchParam));
@@ -179,7 +193,7 @@ export interface EntityStoreProperties<entity, id extends idType = number, searc
     bypassTriggerBlocks?: boolean;
     selectIdFunction: selectIdFunctionType<entity, id>;
     sortFunction?: sortFunctionType<entity>;
-    searchFunction?: EntityStore<entity, id, searchType>['searchFunction'];
+    searchFunction?: SearchFunctionType<entity, id, searchType>;
 }
 
 export function createEntityStore<entity, id extends idType = number, searchType = string>(
