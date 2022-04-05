@@ -146,8 +146,8 @@ export class DynamicLoadingStore<entity, id extends idType = number, searchType 
 
         const result = new ReplaySubject<entity>(1);
 
-        loadResult.subscribe(
-            (e: entity | undefined) => {
+        loadResult.subscribe({
+            next: (e: entity | undefined) => {
                 if (e) {
                     this.setOne(e);
                     this.currentlyLoading.delete(id);
@@ -157,12 +157,12 @@ export class DynamicLoadingStore<entity, id extends idType = number, searchType 
                     result.error(`could not load value for ${id}`);
                 }
             },
-            (error) => {
+            error: (error) => {
                 this.currentlyLoading.delete(id);
                 result.error(error);
                 result.complete();
-            }
-        );
+            },
+        });
 
         return result;
     }
@@ -222,6 +222,11 @@ export class DynamicLoadingStore<entity, id extends idType = number, searchType 
                 });
             }
         }
+    }
+
+    protected updateSearchResults() {
+        // super.updateSearchResults();
+        this.invalidateSearch();
     }
 
     protected searchCacheIsInvalid(

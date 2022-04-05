@@ -7,3 +7,5 @@ act/
 .cache
 .parcel-cache
 .idea
+.yalc
+yalc.lock

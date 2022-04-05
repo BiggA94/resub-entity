@@ -24,7 +24,7 @@ SOFTWARE.
 
 import React, {ReactElement} from 'react';
 import {AutoSubscribeStore, autoSubscribeWithKey, ComponentBase, formCompoundKey, key, StoreBase} from 'resub';
-import {render, screen} from '@testing-library/react';
+import {act, render, screen} from '@testing-library/react';
 import '@testing-library/jest-dom/extend-expect';
 
 interface TestParameters {
@@ -81,25 +81,36 @@ describe('SimpleStore', () => {
         render(<TestComponent propertyKey={'value'} testStore={testStore1} uniqueId={'1'} />);
 
         const testStore2 = new SimpleStore();
-        testStore2.setVal(2);
+        act(() => {
+            testStore2.setVal(2);
+        });
 
         render(<TestComponent propertyKey={'value'} testStore={testStore2} uniqueId={'2'} />);
         expect(screen.getByTestId('1')).toHaveTextContent('1');
         expect(screen.getByTestId('2')).toHaveTextContent('2');
 
-        testStore1.setVal(2);
+        act(() => {
+            testStore1.setVal(2);
+        });
+
         expect(screen.getByTestId('1')).toHaveTextContent('2');
         expect(screen.getByTestId('2')).toHaveTextContent('2');
 
-        testStore2.setVal(1);
+        act(() => {
+            testStore2.setVal(1);
+        });
         expect(screen.getByTestId('1')).toHaveTextContent('2');
         expect(screen.getByTestId('2')).toHaveTextContent('1');
 
-        testStore1.setVal(1);
+        act(() => {
+            testStore1.setVal(1);
+        });
         expect(screen.getByTestId('1')).toHaveTextContent('1');
         expect(screen.getByTestId('2')).toHaveTextContent('1');
 
-        testStore2.setVal(2);
+        act(() => {
+            testStore2.setVal(2);
+        });
         expect(screen.getByTestId('1')).toHaveTextContent('1');
         expect(screen.getByTestId('2')).toHaveTextContent('2');
     }
