@@ -25,10 +25,11 @@ SOFTWARE.
 import React from 'react';
 import {createDynamicLoadingStore, createEntityStore, createPersistentEntityStore, EntityStore} from '../';
 import {ComponentBase} from 'resub';
-import {mount} from 'enzyme';
 import {Observable, of} from 'rxjs';
 import {delay} from 'rxjs/operators';
 import {wait} from './testUtil';
+import '@testing-library/jest-dom/extend-expect';
+import {act, render, screen} from '@testing-library/react';
 
 interface TestObject {
     key: number;
@@ -69,17 +70,32 @@ class TestComponent<searchType = string> extends ComponentBase<
         }
     }
 
-    render(): null | number | number[] {
+    render(): null | number | number[] | React.ReactElement[] | React.ReactElement {
         if (!this.state.testObject) return null;
         if (Array.isArray(this.state.testObject)) {
             return this.state.testObject.map((obj: TestObject) => {
-                // return <p key={obj.key}>{obj.value}</p>;
-                return obj.value;
+                return (
+                    <div key={obj.key} data-testid={obj.key} x-value={obj.value}>
+                        {obj.value}
+                    </div>
+                );
             });
         } else {
-            return (this.state.testObject as TestObject).value;
+            return (
+                <div data-testid={this.props.propertyKey} x-value={(this.state.testObject as TestObject).value}>
+                    {(this.state.testObject as TestObject).value}
+                </div>
+            );
         }
     }
+}
+
+function expectValue(key: string, expectedValue: unknown) {
+    expect(screen.getByTestId(key)).toHaveAttribute('x-value', expectedValue);
+}
+
+function expectNotValue(key: string, expectedValue: unknown) {
+    expect(screen.getByTestId(key)).not.toHaveAttribute('x-value', expectedValue);
 }
 
 describe('EntityStore', function () {
@@ -117,31 +133,31 @@ describe('EntityStore', function () {
         });
         testStore.setAll(testEntities);
 
-        const testComponent1 = mount(
-            <TestComponent uniqueId={new Date().getTime() + '1'} testStore={testStore} propertyKey={1} />
+        render(
+            <div>
+                <TestComponent propertyKey={1} testStore={testStore} uniqueId={new Date().getTime() + '1'} />
+                <TestComponent propertyKey={2} testStore={testStore} uniqueId={new Date().getTime() + '2'} />
+            </div>
         );
 
-        const testComponent2 = mount(
-            <TestComponent propertyKey={2} testStore={testStore} uniqueId={new Date().getTime() + '2'} />
-        );
+        expect(screen.getByTestId('1')).toHaveAttribute('x-value', '1');
+        expectValue('1', '1');
+        expectValue('2', '2');
 
-        expect(testComponent1.contains('1')).toEqual(true);
-        expect(testComponent2.contains('2')).toEqual(true);
+        act(() => {
+            testStore.setOne({key: 1, value: 2});
+        });
 
-        testStore.setOne({key: 1, value: 2});
+        expectNotValue('1', '1');
+        expectValue('1', '2');
+        expectValue('2', '2');
 
-        testComponent1.update();
-        testComponent2.update();
+        act(() => {
+            testStore.setOne({key: 2, value: 1});
+        });
 
-        expect(testComponent1.contains('1')).toEqual(false);
-        expect(testComponent1.contains('2')).toEqual(true);
-
-        testStore.setOne({key: 2, value: 1});
-
-        testComponent1.update();
-        testComponent2.update();
-        expect(testComponent1.contains('2')).toEqual(true);
-        expect(testComponent2.contains('1')).toEqual(true);
+        expectValue('1', '2');
+        expectValue('2', '1');
     });
 
     it('should trigger update in component on setEntities of entity', function () {
@@ -150,32 +166,29 @@ describe('EntityStore', function () {
         });
         testStore.setAll(testEntities);
 
-        const testComponent1 = mount(
-            <TestComponent testStore={testStore} propertyKey={1} uniqueId={new Date().getTime() + '1'} />
+        render(
+            <div>
+                <TestComponent propertyKey={1} testStore={testStore} uniqueId={new Date().getTime() + '1'} />
+                <TestComponent propertyKey={2} testStore={testStore} uniqueId={new Date().getTime() + '2'} />
+            </div>
         );
 
-        const testComponent2 = mount(
-            <TestComponent testStore={testStore} propertyKey={2} uniqueId={new Date().getTime() + '2'} />
-        );
+        expectValue('1', '1');
+        expectValue('2', '2');
 
-        expect(testComponent1.contains('1')).toEqual(true);
-        expect(testComponent2.contains('2')).toEqual(true);
+        act(() => {
+            testStore.setEntities([...testStore.getAll().filter((e) => e.key !== 1), {key: 1, value: 2}]);
+        });
 
-        testStore.setEntities([...testStore.getAll().filter((e) => e.key !== 1), {key: 1, value: 2}]);
+        expectNotValue('1', '1');
+        expectValue('1', '2');
 
-        testComponent1.update();
-        testComponent2.update();
+        act(() => {
+            testStore.setEntities([...testStore.getAll().filter((e) => e.key !== 2), {key: 2, value: 1}]);
+        });
 
-        expect(testComponent1.contains('1')).toEqual(false);
-        expect(testComponent1.contains('2')).toEqual(true);
-
-        testStore.setEntities([...testStore.getAll().filter((e) => e.key !== 2), {key: 2, value: 1}]);
-
-        testComponent1.update();
-        testComponent2.update();
-
-        expect(testComponent1.contains('2')).toEqual(true);
-        expect(testComponent2.contains('1')).toEqual(true);
+        expectValue('1', '2');
+        expectValue('2', '1');
     });
 
     it('DynamicLoadingStore should trigger update in component on change of entity', function () {
@@ -185,33 +198,29 @@ describe('EntityStore', function () {
         });
         testStore.setAll(testEntities);
 
-        const testComponent1 = mount(
-            <TestComponent uniqueId={new Date().getTime() + '1'} testStore={testStore} propertyKey={1} />
+        render(
+            <div>
+                <TestComponent propertyKey={1} testStore={testStore} uniqueId={new Date().getTime() + '1'} />
+                <TestComponent propertyKey={2} testStore={testStore} uniqueId={new Date().getTime() + '2'} />
+            </div>
         );
 
-        const testComponent2 = mount(
-            <TestComponent propertyKey={2} testStore={testStore} uniqueId={new Date().getTime() + '2'} />
-        );
+        expectValue('1', '1');
+        expectValue('2', '2');
 
-        expect(testComponent1.contains('1')).toEqual(true);
-        expect(testComponent2.contains('2')).toEqual(true);
+        act(() => {
+            testStore.setEntities([...testStore.getAll().filter((e) => e.key !== 1), {key: 1, value: 2}]);
+        });
 
-        // testStore.setOne({key: 1, value: 2});
-        testStore.setEntities([...testStore.getAll().filter((e) => e.key !== 1), {key: 1, value: 2}]);
+        expectNotValue('1', '1');
+        expectValue('1', '2');
 
-        testComponent1.update();
-        testComponent2.update();
+        act(() => {
+            testStore.setEntities([...testStore.getAll().filter((e) => e.key !== 2), {key: 2, value: 1}]);
+        });
 
-        expect(testComponent1.contains('1')).toEqual(false);
-        expect(testComponent1.contains('2')).toEqual(true);
-
-        // testStore.setOne({key: 2, value: 1});
-        testStore.setEntities([...testStore.getAll().filter((e) => e.key !== 2), {key: 2, value: 1}]);
-
-        testComponent1.update();
-        testComponent2.update();
-        expect(testComponent1.contains('2')).toEqual(true);
-        expect(testComponent2.contains('1')).toEqual(true);
+        expectValue('1', '2');
+        expectValue('2', '1');
     });
 
     it('EntityStore should trigger update in component subscribed to all on change of entity', function () {
@@ -220,20 +229,27 @@ describe('EntityStore', function () {
         });
         testStore.setEntities(testEntities);
 
-        const testComponent1 = mount(<TestComponent testStore={testStore} uniqueId={new Date().getTime() + '1'} />);
+        render(<TestComponent testStore={testStore} uniqueId={new Date().getTime() + '1'} />);
 
-        expect(testComponent1.html()).toEqual('012');
+        expectValue('0', '0');
+        expectValue('1', '1');
+        expectValue('2', '2');
 
-        testStore.removeOneById(1);
+        act(() => {
+            testStore.removeOneById(1);
+        });
 
-        testComponent1.update();
+        expectValue('0', '0');
+        expect(screen.queryByTestId('1')).toBeNull();
+        expectValue('2', '2');
 
-        expect(testComponent1.html()).toEqual('02');
+        act(() => {
+            testStore.setOne({key: 2, value: 1});
+        });
 
-        testStore.setOne({key: 2, value: 1});
-
-        testComponent1.update();
-        expect(testComponent1.html()).toEqual('01');
+        expectValue('0', '0');
+        expect(screen.queryByTestId('1')).toBeNull();
+        expectValue('2', '1');
     });
 
     function getFilteredTestEntitiesDelayed(searchParameter: number, delayMs: number): Observable<Array<number>> {
@@ -254,11 +270,7 @@ describe('EntityStore', function () {
             },
         });
 
-        const testComponent1 = mount(
-            <TestComponent uniqueId={new Date().getTime() + '1'} testStore={testStore} search={1} />
-        );
-
-        testComponent1.update();
+        render(<TestComponent uniqueId={new Date().getTime() + '1'} testStore={testStore} search={1} />);
 
         expect(loadFunctionCallCounter).toEqual(1);
     });
@@ -351,37 +363,33 @@ describe('EntityStore', function () {
             },
         });
 
-        const testComponent1 = mount(
-            <TestComponent uniqueId={new Date().getTime() + '1'} testStore={testStore} search={1} />
+        render(
+            <div>
+                <TestComponent testStore={testStore} uniqueId={new Date().getTime() + '1'} search={1} />
+                <TestComponent testStore={testStore} uniqueId={new Date().getTime() + '2'} search={2} />
+            </div>
         );
 
-        const testComponent2 = mount(
-            <TestComponent uniqueId={new Date().getTime() + '2'} testStore={testStore} search={2} />
-        );
+        await act(() => wait(100));
 
-        await wait(100);
-        testComponent1.update();
-        testComponent2.update();
+        expectValue('1', '1');
+        expectValue('2', '2');
 
-        expect(testComponent1.contains('1')).toEqual(true);
-        expect(testComponent2.contains('2')).toEqual(true);
+        act(() => {
+            testStore.setOne({key: 1, value: 2});
+            testStore.setEntities([...testStore.getAll().filter((e) => e.key !== 1), {key: 1, value: 2}]);
+        });
 
-        testStore.setOne({key: 1, value: 2});
-        testStore.setEntities([...testStore.getAll().filter((e) => e.key !== 1), {key: 1, value: 2}]);
+        expectNotValue('1', '1');
+        expectValue('1', '2');
 
-        testComponent1.update();
-        testComponent2.update();
+        act(() => {
+            testStore.setOne({key: 2, value: 1});
+            testStore.setEntities([...testStore.getAll().filter((e) => e.key !== 2), {key: 2, value: 1}]);
+        });
 
-        expect(testComponent1.contains('1')).toEqual(false);
-        expect(testComponent1.contains('2')).toEqual(true);
-
-        testStore.setOne({key: 2, value: 1});
-        testStore.setEntities([...testStore.getAll().filter((e) => e.key !== 2), {key: 2, value: 1}]);
-
-        testComponent1.update();
-        testComponent2.update();
-        expect(testComponent1.contains('2')).toEqual(true);
-        expect(testComponent2.contains('1')).toEqual(true);
+        expectValue('1', '2');
+        expectValue('2', '1');
     });
 
     it('PersistentEntityStore should trigger update in component on change of entity', function () {
@@ -392,31 +400,29 @@ describe('EntityStore', function () {
         });
         testStore.setAll(testEntities);
 
-        const testComponent1 = mount(
-            <TestComponent uniqueId={new Date().getTime() + '1'} testStore={testStore} propertyKey={1} />
+        render(
+            <div>
+                <TestComponent propertyKey={1} testStore={testStore} uniqueId={new Date().getTime() + '1'} />
+                <TestComponent propertyKey={2} testStore={testStore} uniqueId={new Date().getTime() + '2'} />
+            </div>
         );
 
-        const testComponent2 = mount(
-            <TestComponent propertyKey={2} testStore={testStore} uniqueId={new Date().getTime() + '2'} />
-        );
+        expectValue('1', '1');
+        expectValue('2', '2');
 
-        expect(testComponent1.contains('1')).toEqual(true);
-        expect(testComponent2.contains('2')).toEqual(true);
+        act(() => {
+            testStore.setOne({key: 1, value: 2});
+        });
 
-        testStore.setOne({key: 1, value: 2});
+        expectNotValue('1', '1');
+        expectValue('1', '2');
 
-        testComponent1.update();
-        testComponent2.update();
+        act(() => {
+            testStore.setOne({key: 2, value: 1});
+        });
 
-        expect(testComponent1.contains('1')).toEqual(false);
-        expect(testComponent1.contains('2')).toEqual(true);
-
-        testStore.setOne({key: 2, value: 1});
-
-        testComponent1.update();
-        testComponent2.update();
-        expect(testComponent1.contains('2')).toEqual(true);
-        expect(testComponent2.contains('1')).toEqual(true);
+        expectValue('1', '2');
+        expectValue('2', '1');
     });
 
     it('should return entries, that match the search criteria', function () {
@@ -451,34 +457,34 @@ describe('EntityStore', function () {
         expect(testStore.search(1)).toHaveLength(1);
         expect(testStore.search(2)).toHaveLength(1);
 
-        const testComponent1 = mount(
-            <TestComponent uniqueId={new Date().getTime() + '1'} testStore={testStore} propertyKey={1} search={1} />
+        render(
+            <div>
+                <TestComponent propertyKey={1} search={1} testStore={testStore} uniqueId={new Date().getTime() + '1'} />
+                <TestComponent propertyKey={2} search={2} testStore={testStore} uniqueId={new Date().getTime() + '2'} />
+            </div>
         );
 
-        const testComponent2 = mount(
-            <TestComponent uniqueId={new Date().getTime() + '2'} testStore={testStore} propertyKey={2} search={2} />
-        );
+        expectValue('1', '1');
+        expectValue('2', '2');
 
-        expect(testComponent1.contains('1')).toEqual(true);
-        expect(testComponent2.contains('2')).toEqual(true);
-
-        testStore.setOne({key: 1, value: 2});
+        act(() => {
+            testStore.setOne({key: 1, value: 2});
+        });
 
         expect(testStore.search(1)).toHaveLength(0);
         expect(testStore.search(2)).toHaveLength(2);
 
-        testComponent1.update();
-        testComponent2.update();
+        expectNotValue('1', '1');
+        expectValue('2', '2');
 
-        expect(testComponent1.contains('1')).toEqual(false);
-        expect(testComponent2.contains('2')).toEqual(true);
+        act(() => {
+            testStore.setOne({key: 2, value: 1});
+        });
 
-        testStore.setOne({key: 2, value: 1});
-
-        testComponent1.update();
-        testComponent2.update();
-        expect(testComponent1.contains('1')).toEqual(true);
-        expect(testComponent2.contains('2')).toEqual(true);
+        expectValue('1', '2');
+        expectValue('2', '1');
+        // expect(testComponent1.contains('1')).toEqual(true);
+        // expect(testComponent2.contains('2')).toEqual(true);
 
         expect(testStore.search(1)).toHaveLength(1);
         expect(testStore.search(2)).toHaveLength(1);
