@@ -28,7 +28,7 @@ import {idType} from './EntityHandler';
 import {firstValueFrom, Observable} from 'rxjs';
 import {tap} from 'rxjs/operators';
 
-class SuspenseWrapper<entity> {
+class SuspendableEntity<entity> {
     status: 'pending' | 'error' | 'success' = 'pending';
     protected result?: entity;
     error?: unknown;
@@ -69,7 +69,7 @@ export class SuspenseStore<entity, id extends idType = number> extends DynamicLo
     // ignore this for now, decide whether to use same method, or other method for suspense api...
     // eslint-disable-next-line
     // @ts-ignore
-    getOne(id: id): SuspenseWrapper<entity> {
+    getOne(id: id): SuspendableEntity<entity> {
         let value: entity | undefined | Observable<entity> = super.getOne(id);
         const currentTimestamp = new Date(Date.now());
         const cachedTimestamp = this.getLastLoadedTime(id);
@@ -82,7 +82,7 @@ export class SuspenseStore<entity, id extends idType = number> extends DynamicLo
                 value = loadingObservable;
             }
         }
-        return new SuspenseWrapper<entity>(value);
+        return new SuspendableEntity<entity>(value);
     }
 
     loadOne(
