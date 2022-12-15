@@ -70,7 +70,7 @@ class TestComponent<searchType = string> extends ComponentBase<
         }
     }
 
-    render(): null | number | number[] | React.ReactElement[] | React.ReactElement {
+    render(): null | number | number[] | JSX.Element[] | JSX.Element {
         if (!this.state.testObject) return null;
         if (Array.isArray(this.state.testObject)) {
             return this.state.testObject.map((obj: TestObject) => {

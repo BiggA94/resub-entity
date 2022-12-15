@@ -30,6 +30,7 @@
   "rules": {
     "no-unused-vars": "off",
     "semi": "error",
-    "prettier/prettier": "error"
+    "prettier/prettier": "error",
+    "react/no-unknown-property": "warn"
   }
 }

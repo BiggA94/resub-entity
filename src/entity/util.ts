@@ -41,7 +41,10 @@ export function defaultSortFunction<entity, id extends idType = number>(
 }
 
 // eslint-disable-next-line @typescript-eslint/ban-types
-export function deterministicStringify<t>(object: t): string {
+export function deterministicStringify<t>(obj: t): string {
+    if (!(obj instanceof Object)) {
+        return JSON.stringify(obj);
+    }
     // just simple function, because it is only used for id generation
-    return JSON.stringify(object, Object.keys(object).sort());
+    return JSON.stringify(obj, Object.keys(obj).sort());
 }
