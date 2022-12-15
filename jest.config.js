@@ -3,7 +3,7 @@
  */
 
 module.exports = {
-    // preset: 'ts-jest',
+    preset: 'ts-jest',
     testEnvironment: 'jsdom',
     rootDir: '.',
     moduleFileExtensions: ['ts', 'tsx', 'js'],

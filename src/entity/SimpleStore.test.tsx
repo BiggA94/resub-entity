@@ -38,7 +38,7 @@ interface TestState {
 }
 
 class TestComponent extends ComponentBase<TestParameters, TestState> {
-    render(): ReactElement | null {
+    render(): JSX.Element | null {
         if (!this.state.testObject) return null;
         return <h1 data-testid={this.props.uniqueId}>{this.state.testObject}</h1>;
     }
