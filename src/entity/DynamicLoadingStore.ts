@@ -77,6 +77,18 @@ export class DynamicLoadingStore<entity, id extends idType = number, searchType 
         return value;
     }
 
+    getOneWithUndefined(id: id | undefined): Readonly<entity> | undefined {
+        // this needs to be called before undefined check of id just because of hooks.. :/
+        const value = super.getOneWithUndefined(id);
+        if (id === undefined) return undefined;
+        const currentTimestamp = new Date(Date.now());
+        const cachedTimestamp = this.lastLoadedAt.get(id);
+        if (this.cacheIsInvalid(cachedTimestamp, currentTimestamp, id)) {
+            this.loadOne(id, currentTimestamp);
+        }
+        return value;
+    }
+
     protected loadOneIfInvalidCache(id: id): Observable<entity | null> {
         const currentTimestamp = new Date(Date.now());
         const cachedTimestamp = this.lastLoadedAt.get(id);
@@ -115,7 +127,6 @@ export class DynamicLoadingStore<entity, id extends idType = number, searchType 
      * @param _currTimestamp
      * @param addPipesFunction
      */
-    @autoSubscribeWithKey(triggerEntityKey)
     loadOne(
         id: id,
         _currTimestamp?: Date,
@@ -262,7 +273,7 @@ export class DynamicLoadingStore<entity, id extends idType = number, searchType 
 export interface DynamicLoadingStoreProperties<entity, id extends idType = number, searchType = string>
     extends SelectEntityStoreProperties<entity, id, searchType> {
     loadFunction: (id: id) => Observable<entity>;
-    searchLoadFunction?: DynamicLoadingStore<entity, id, searchType>['searchLoadFunction'];
+    searchLoadFunction?: (searchParams: searchType) => Observable<ReadonlyArray<id>>;
     hashTimeSec?: number;
     /**
      * This function returns a Date, until the data is valid.

@@ -562,4 +562,11 @@ describe('EntityStore', function () {
             {key: 5, value: 5},
         ]);
     });
+    it('should return undefined if undefined was given as key', function () {
+        const testStore = createEntityStore<TestObject>({
+            selectIdFunction: (entity) => entity.key,
+        });
+        testStore.setAll(testEntities);
+        expect(testStore.getOne(undefined)).toBeUndefined();
+    });
 });

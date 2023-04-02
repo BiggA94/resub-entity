@@ -95,6 +95,16 @@ export class EntityStore<entity, id extends idType = number, searchType = string
         return this.entityHandler.getOne(id);
     }
 
+    /**
+     * Allows usage in functional components with parameters that are not loaded yet
+     * @param id
+     */
+    @autoSubscribeWithKey(triggerEntityKey)
+    public getOneWithUndefined(id: id | undefined): entity | undefined {
+        if (id === undefined) return undefined;
+        return this.entityHandler.getOne(id);
+    }
+
     @autoSubscribeWithKey(triggerEntityKey)
     public getAll(): ReadonlyArray<entity> {
         return this.entityHandler.getAll();
